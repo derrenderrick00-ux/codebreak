@@ -1,17 +1,17 @@
 {
-  "name": "vanila",
-  "version": "0.0.0",
+  "name": "codebreak-tower-of-code",
   "private": true,
+  "version": "0.2.0",
   "type": "module",
+  "description": "CodeBreak: The Tower of Code — browser-based learning adventure",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 127.0.0.1",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "node --test tests/*.test.js",
+    "check": "npm run test && npm run build"
   },
-  "devDependencies": {
-    "vite": "^8.3.4"
-  },
-  "dependencies": {
-    "phaser": "^4.2.1"
-  }
+  "engines": { "node": ">=20.19.0" },
+  "dependencies": { "phaser": "^3.90.0" },
+  "devDependencies": { "vite": "^8.3.5" }
 }

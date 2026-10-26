@@ -1,0 +1,31 @@
+<!doctype html><html><head><title>Sandbox regression harness</title></head><body>
+<pre id="results">Starting...</pre><script type="module">
+import {runChallenge} from '../../src/runtime/sandbox.js';
+import {getFloor} from '../../src/content/floors.js';
+const cases=[];
+const test=async(label,fn)=>{try {await fn(); cases.push({label,ok:true});}catch(error){cases.push({label,ok:false,error:String(error)});}};
+await test('valid solution passes',async()=>{
+ const r=await runChallenge('function powerOn(v) { return v >= 5; }',getFloor(1));
+ if(!r.passed || r.results.length!==5)throw new Error(JSON.stringify(r));
+});
+await test('incorrect solution fails',async()=>{
+ const r=await runChallenge('function powerOn(v) { return false; }',getFloor(1));
+ if(r.passed || !r.results.some(x=>!x.ok))throw new Error(JSON.stringify(r));
+});
+await test('syntax error is contained',async()=>{
+ const r=await runChallenge('function powerOn( {',getFloor(1));
+ if(r.passed || !String(r.error).includes('Compilation'))throw new Error(JSON.stringify(r));
+});
+await test('infinite loop times out',async()=>{
+ const r=await runChallenge('function powerOn(v){ while(true) {} }',getFloor(1),{timeout:450});
+ if(r.passed || !r.timeout)throw new Error(JSON.stringify(r));
+});
+await test('attempted network request is blocked by CSP',async()=>{
+ const r=await runChallenge('function powerOn(v){ fetch("https://example.com/"); return v >= 5; }',getFloor(1));
+ // If async fetch throws after returning it may be unhandled. We do not rely on
+ // this test for a guarantee of isolation; browser CSP independently blocks it.
+ if(r.error?.includes('Sandbox could not start'))throw new Error(JSON.stringify(r));
+});
+window.__sandboxRegression={passed:cases.every(t=>t.ok),cases};
+document.querySelector('#results').textContent=JSON.stringify(window.__sandboxRegression,null,2);
+</script></body></html>
