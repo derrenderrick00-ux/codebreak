@@ -4,9 +4,10 @@ import { CHAPTERS } from '../content/extended.js';
 import { gradeContent, inertHTMLPreview } from '../runtime/validators.js';
 import { LESSON_STEPS } from '../learning/lesson.js';
 import { DIAGNOSTIC, assessDiagnostic } from '../content/diagnostic.js';
-import { loadProgress, saveProgress, completeFloor, applyPlacement, registerAttempt, setCurrentFloor, summarize, exportProgress, importProgress, createProgress } from '../state/progress.js';
+import { loadProgress, saveProgress, completeFloor, applyPlacement, registerAttempt, setCurrentFloor, summarize, exportProgress, importProgress } from '../state/progress.js';
 import { runChallenge } from '../runtime/sandbox.js';
 import { sound } from '../core/sound.js';
+import { resetLocalGame } from '../state/reset.js';
 
 const $ = (id) => document.getElementById(id);
 const escapeHTML = (text) => String(text).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -75,6 +76,7 @@ export class AppUI {
     $('learn-button').addEventListener('click',()=>this.openChallenge(this.progress.currentFloor));
     $('floors-button').addEventListener('click',()=>this.openFloorMap());
     $('progress-button').addEventListener('click',()=>this.openProgress());
+    $('new-game-button').addEventListener('click',()=>this.confirmReset());
     $('help-button').addEventListener('click',()=>this.openHelp());
     $('sound-toggle').addEventListener('click',()=>{this.progress.sound=!this.progress.sound;this.persist();sound.setEnabled(this.progress.sound);this.updateSoundButton();sound.beep();});
     $('close-modal').addEventListener('click',()=>this.closeModal());
@@ -109,6 +111,7 @@ export class AppUI {
       else if(action==='import')$('progress-import').click();
       else if(action==='reset-progress')this.confirmReset();
       else if(action==='confirm-reset')this.resetProgress();
+      else if(action==='cancel-reset')this.closeModal();
       else if(action==='review-story')this.openStory();
     });
     $('modal-body').addEventListener('change',event=>{
@@ -292,6 +295,19 @@ export class AppUI {
     try{this.progress=importProgress(await file.text());this.persist();this.gotoFloor(this.progress.currentFloor);this.say('PATCH: Save imported successfully. Welcome back.');}
     catch(error){this.openProgress();this.say('PATCH: Invalid or incompatible save. Nothing was overwritten.');}
   }
-  confirmReset(){this.showModal('DANGER ZONE','RESET ALL LOCAL PROGRESS',`<p>Reset all chapter progress, diagnostic results, completion records, and floor unlocks on this browser?</p><p class="muted">Your existing downloaded save file will not be affected. Editor drafts remain locally stored separately.</p><div class="action-row">${button('Yes, reset everything','confirm-reset','danger-btn')}${button('Keep my progress','progress','secondary-btn')}</div>`,'confirm-reset');}
-  resetProgress(){this.progress=createProgress();this.progress.onboarding=true;this.persist();this.gotoFloor(0);this.say('PATCH: Fresh start. We can rebuild this. Again.');}
+  confirmReset(){this.showModal('DANGER ZONE','START A NEW GAME',`
+    <p>This will permanently erase your <strong>local floor progress, mastery, diagnostic placement, attempts, and saved editor drafts</strong> on this browser.</p>
+    <p class="muted">To keep your work, export your save first. Downloaded backup files will not be deleted.</p>
+    <div class="action-row">${button('Export backup first','export')}${button('Erase progress & start again','confirm-reset','danger-btn')}${button('Cancel','cancel-reset','secondary-btn')}</div>
+  `,'confirm-reset');}
+  resetProgress(){
+    this.progress=resetLocalGame();
+    this.running=false;
+    this.elevatorInProgress=false;
+    sound.setEnabled(false);
+    this.updateSoundButton();
+    this.gotoFloor(0);
+    this.openIntro();
+    this.say('PATCH: Everything is back to Floor 0. Our bugs are getting nostalgic.');
+  }
 }

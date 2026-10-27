@@ -22,3 +22,6 @@ button,textarea,input{font:inherit}button{cursor:pointer}button:disabled{opacity
 .preview-row iframe{background:#fdfdfd;display:block;width:100%;min-height:195px;border:0}
 #chapter-heading{display:inline-block}
 @media(max-width:850px){.chapter-group summary{font-size:.88rem}.preview-row iframe{min-height:150px}}
+
+/* New-game action stays available when the header wraps on narrow screens. */
+@media (max-width:670px) { .site-header {flex-wrap:wrap;padding:10px 0;} .top-actions {flex-wrap:wrap;justify-content:flex-end;margin-left:auto;gap:6px;} }
