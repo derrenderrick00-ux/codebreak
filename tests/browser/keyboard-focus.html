@@ -1,0 +1,22 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>CodeBreak keyboard focus regression</title></head>
+<body><main><h1>CodeBreak keyboard navigation smoke test</h1>
+<label for="editor">Editor</label><textarea id="editor" rows="6">const x = 1;</textarea>
+<button id="send">Run browser check</button><pre id="result" role="status"></pre></main>
+<script type="module">
+import { shouldPreventGameScroll } from '../../src/game/keyboardFocus.js';
+const editor=document.querySelector('#editor');
+function handler(event){if(shouldPreventGameScroll(event,{modalOpen:false,body:document.body}))event.preventDefault();}
+document.addEventListener('keydown', handler);
+const logs=[];
+function send(target,key){const e=new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true});target.dispatchEvent(e);return e.defaultPrevented;}
+editor.focus();
+for(const key of [' ','ArrowLeft','ArrowRight','ArrowUp','ArrowDown']){
+  const blocked=send(editor,key); logs.push({key,editorPrevented:blocked,expected:false});
+}
+const blocked=send(document.body,' ');
+logs.push({key:'Space in game',gamePrevented:blocked,expected:true});
+window.keyboardSmoke=logs;
+const passed=logs.every(row=>(row.editorPrevented??row.gamePrevented)===row.expected);
+document.querySelector('#result').textContent=JSON.stringify({passed,logs},null,2);
+document.body.dataset.keyboardTest=passed?'pass':'fail';
+</script></body></html>

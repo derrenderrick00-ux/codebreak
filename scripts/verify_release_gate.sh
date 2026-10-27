@@ -3,7 +3,7 @@ set -Eeuo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 printf '\n--- CodeBreak v1.2 local release gate ---\n'
 printf '\n1. Syntax checks\n'
-for file in src/main.js src/game/GameScene.js src/ui/app.js src/runtime/sandbox.js \
+for file in src/main.js src/game/GameScene.js src/game/keyboardFocus.js src/ui/app.js src/runtime/sandbox.js \
   scripts/check_bundle_budget.mjs capstone/server/scripts/integration.mjs; do
   node --check "$file"
 done

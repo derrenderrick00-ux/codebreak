@@ -4,6 +4,7 @@ import { getFloor } from '../content/floors.js';
 import { CHAPTERS } from '../content/extended.js';
 import { sound } from '../core/sound.js';
 import { loadProgress } from '../state/progress.js';
+import { canUseGameKeyboard, shouldPreventGameScroll } from './keyboardFocus.js';
 const W = 1180; const H = 540;
 const STICK = 1080;
 const SPEED = 215; const SPRINT = 285; const JUMP = 410;
@@ -47,7 +48,13 @@ export class GameScene extends Phaser.Scene {
     this.drawTerminal(); this.drawElevator();
     this.prompt = this.add.text(0,0,'', {fontFamily:'monospace',fontSize:'12px',color:'#8fffe4',backgroundColor:'#0a1d30',padding:{x:8,y:5}}).setDepth(10).setVisible(false);
     this.cameras.main.startFollow(this.actor,true,.09,.09,0,30);
-    this.keys = this.input.keyboard?.addKeys('A,D,W,LEFT,RIGHT,UP,SPACE,E,SHIFT,ESC');
+    // Do not register Phaser's global preventDefault capture for navigation keys.
+    // Capturing Space/Arrows globally makes them unusable inside the code editor.
+    this.keys = this.input.keyboard?.addKeys('A,D,W,LEFT,RIGHT,UP,SPACE,E,SHIFT,ESC', false);
+    this.onGameKeyDown = (event) => {
+      if (shouldPreventGameScroll(event, { modalOpen: this.isLocked, body: document.body })) event.preventDefault();
+    };
+    document.addEventListener('keydown', this.onGameKeyDown, { passive: false });
     this.listeners = [
       ['game:floor',(event)=>{this.registry.set('floor',event.detail.floor);this.registry.set('solved',Boolean(event.detail.solved));this.scene.restart();}],
       ['game:solved',()=>{this.registry.set('solved',true);this.floorSolved=true;this.openDoor();}],
@@ -56,7 +63,10 @@ export class GameScene extends Phaser.Scene {
       ['game:control',(event)=>{const {name,pressed}=event.detail;if(name==='interact' && pressed) this.interact();else if(name in this.virtual)this.virtual[name]=pressed;}],
     ];
     for (const [name,fn] of this.listeners) bus.addEventListener(name,fn);
-    this.events.once('shutdown',()=>{for (const [name,fn] of this.listeners)bus.removeEventListener(name,fn);});
+    this.events.once('shutdown',()=>{
+      for (const [name,fn] of this.listeners) bus.removeEventListener(name,fn);
+      document.removeEventListener('keydown', this.onGameKeyDown);
+    });
     emit('game:ready',{floor:this.floor});
   }
   drawBackdrop() {
@@ -160,18 +170,19 @@ export class GameScene extends Phaser.Scene {
   update(time,delta){
     if(!this.actor?.active)return;
     this.frameNo+=delta;this.landPulse=Math.max(0,this.landPulse-delta/220);
-    const left=this.keys && (this.keys.A.isDown||this.keys.LEFT.isDown) || this.virtual.left;
-    const right=this.keys && (this.keys.D.isDown||this.keys.RIGHT.isDown) || this.virtual.right;
+    const gameKeyboard = canUseGameKeyboard({ modalOpen: this.isLocked, activeElement: document.activeElement });
+    const left=(gameKeyboard && this.keys && (this.keys.A.isDown||this.keys.LEFT.isDown)) || this.virtual.left;
+    const right=(gameKeyboard && this.keys && (this.keys.D.isDown||this.keys.RIGHT.isDown)) || this.virtual.right;
     const onGround=this.actor.body.blocked.down||this.actor.body.touching.down;
     if(onGround&&!this.wasGrounded&&this.frameNo>300&&!this.transitioning){this.landPulse=1;sound.beep('land');}
     this.wasGrounded=onGround;
     if(!this.isLocked){
-      const sprint=Boolean(this.keys?.SHIFT?.isDown); const vx=(Number(Boolean(right))-Number(Boolean(left)))*(sprint?SPRINT:SPEED);
+      const sprint=Boolean(gameKeyboard && this.keys?.SHIFT?.isDown); const vx=(Number(Boolean(right))-Number(Boolean(left)))*(sprint?SPRINT:SPEED);
       this.actor.setVelocityX(vx);if(vx!==0)this.facing=Math.sign(vx);
       if(vx!==0)this.actor.setFlipX(vx<0);
-      const jump=Boolean(this.keys && (Phaser.Input.Keyboard.JustDown(this.keys.W)||Phaser.Input.Keyboard.JustDown(this.keys.UP)||Phaser.Input.Keyboard.JustDown(this.keys.SPACE))) || (this.virtual.jump&&!this.virtual.wasJump);
+      const jump=Boolean(gameKeyboard && this.keys && (Phaser.Input.Keyboard.JustDown(this.keys.W)||Phaser.Input.Keyboard.JustDown(this.keys.UP)||Phaser.Input.Keyboard.JustDown(this.keys.SPACE))) || (this.virtual.jump&&!this.virtual.wasJump);
       if(jump&&onGround){this.actor.setVelocityY(-JUMP);sound.beep('jump');}
-      if(this.keys && Phaser.Input.Keyboard.JustDown(this.keys.E))this.interact();
+      if(gameKeyboard && this.keys && Phaser.Input.Keyboard.JustDown(this.keys.E))this.interact();
     } else {this.actor.setVelocityX(0);}
     this.virtual.wasJump=this.virtual.jump;
     const velocity=this.actor.body.velocity;

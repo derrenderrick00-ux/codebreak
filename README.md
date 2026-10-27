@@ -1,6 +1,6 @@
 # CODEBREAK: THE TOWER OF CODE
 
-**v1.0.0-rc.1 — Complete 100-floor browser campaign / release candidate**
+**v1.2.0-rc.2 — Full Tower release candidate with keyboard focus correction**
 
 A story-driven stickman programming game following Subject 404, PATCH, ROOT, NULL, and the missing Architect. Ten chapters introduce JavaScript, HTML, CSS, browser JavaScript, async work, Node.js, Express, PostgreSQL/SQL, JWT/security and full-stack integration. Each floor has the user's nine-stage learning sequence. The full-stack material includes **browser learning simulations** AND a **separate runnable Tower Control System Express/PostgreSQL capstone**.
 
@@ -126,3 +126,10 @@ bash scripts/verify_capstone_integration.sh
 ```
 
 CI now runs both the main game build/test job and a separate real PostgreSQL capstone verification job. Public deployment remains blocked until live database tests, full browser/accessibility checks and security/operations review pass.
+
+
+## v1.2.0-rc.2 — Keyboard focus repair / final acceptance
+
+CodeBreak no longer captures Space and arrow keys globally. Inside the coding editor, Space inserts whitespace and arrow keys navigate the caret normally. Phaser controls continue to function with the modal closed. This change includes keyboard-focus regression tests and the release-acceptance checklist in `docs/KEYBOARD_FIX_AND_FINAL_ACCEPTANCE.md`.
+
+The game uses browser simulations for advanced backend lessons. The actual Express/PostgreSQL/JWT capstone is a separate exercise and requires local verification. No claim of external production deployment is made.
