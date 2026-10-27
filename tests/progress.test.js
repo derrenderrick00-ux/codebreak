@@ -38,6 +38,6 @@ test('import rejects unsupported schema versions',()=>{
  assert.throws(()=>importProgress(JSON.stringify({...createProgress(),version:999})),/Unsupported/);
 });
 test('import strips invalid keys and excludes forged mastery',()=>{
- const p=importProgress(JSON.stringify({...createProgress(),completed:[1,100,-1,'2'],mastered:{'1':true,'2':true}}));
+ const p=importProgress(JSON.stringify({...createProgress(),completed:[1,101,-1,'2'],mastered:{'1':true,'2':true}}));
  assert.deepEqual(p.completed,[1]);assert.equal(p.mastered[1],true);assert.equal(p.mastered[2],undefined);
 });

@@ -1,0 +1,30 @@
+<!doctype html><html><head><meta charset="utf-8"><title>CodeBreak Validator Harness</title></head><body><pre id="result">RUNNING</pre><script type="module">
+import {EXTENDED_FLOORS} from '../../src/content/extended.js';
+import {validateHTML,validateCSS,validateSQL} from '../../src/runtime/validators.js';
+import {runChallenge} from '../../src/runtime/sandbox.js';
+const output={passed:0,failed:[],jsSandbox:[],errors:[]};
+for(const f of EXTENDED_FLOORS){
+ if(f.kind==='html'||f.kind==='css'||f.kind==='sql'){
+   const check=f.kind==='html'?validateHTML:f.kind==='css'?validateCSS:validateSQL;
+   const result=check(f.reference,f);const blank=check('',f);
+   if(result.passed&&!blank.passed)output.passed++;
+   else output.failed.push({floor:f.floor,pass:result.passed,blank:blank.passed,details:result.results?.filter(r=>!r.ok)});
+ }
+}
+for(const floor of [0,31,42,51,71,81,100]){
+ const f=EXTENDED_FLOORS.find(x=>x.floor===floor);
+ if(f&&f.kind==='js'){
+ const r=await runChallenge(f.reference,f,{timeout:6000});
+ output.jsSandbox.push({floor,passed:r.passed,error:r.error});
+ } else if(floor===0){
+  const {getFloor}=await import('../../src/content/floors.js');
+  const r=await runChallenge('function identify(name) { const clean=name.trim();return clean||"Subject 404"; }',getFloor(0),{timeout:6000});
+  output.jsSandbox.push({floor:0,passed:r.passed,error:r.error});
+ }
+}
+const {getFloor}=await import('../../src/content/floors.js');
+const timeout=await runChallenge('function identify(){while(true){}}',getFloor(0),{timeout:350});
+output.timeoutHandled=timeout.timeout===true;
+document.getElementById('result').textContent=JSON.stringify(output,null,2);
+window.codebreakHarness=output;
+</script></body></html>

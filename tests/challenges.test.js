@@ -17,7 +17,7 @@ const solutions = {
   9: `function repairCore(modules) { return modules.filter(m=>m.active===true).length; }`,
   10: `function stabilizeLift(start,end) { const out=[]; const s=start<=end?1:-1;for(let n=start;;n+=s){out.push(n);if(n===end)break;}return out; }`
 };
-for(const floor of FLOORS){
+for(const floor of FLOORS.filter(f=>f.floor<=10)){
   test(`Floor ${floor.floor}: expected solution passes every authored case`,()=>{
     const solution=solutions[floor.floor];assert.ok(solution);
     const fn=vm.runInNewContext(`${solution}; ${floor.fn}`,{}, {timeout:500});

@@ -4,20 +4,19 @@ import { FLOORS, getFloor } from '../src/content/floors.js';
 import { LESSON_STEPS, validateLesson } from '../src/learning/lesson.js';
 import { DIAGNOSTIC, assessDiagnostic } from '../src/content/diagnostic.js';
 
-test('Chapter I has Floor 0 and exactly ten numbered floors', () => {
-  assert.equal(FLOORS.length,11);
-  assert.deepEqual(FLOORS.map(x=>x.floor),[0,1,2,3,4,5,6,7,8,9,10]);
+test('Ten chapters have exactly 100 numbered floors plus Floor 0', () => {
+  assert.equal(FLOORS.length,101);
+  assert.deepEqual(FLOORS.map(x=>x.floor),Array.from({length:101},(_,i)=>i));
   assert.equal(getFloor(999), FLOORS[0]);
 });
 test('each floor includes all nine study stages and valid test definitions', () => {
   assert.equal(LESSON_STEPS.length,9);
   for(const floor of FLOORS){
     assert.equal(validateLesson(floor),true,`Floor ${floor.floor} missing study stages`);
-    assert.match(floor.setup,new RegExp(`function ${floor.fn}\\s*\\(`));
-    assert.ok(floor.tests.length>=4,`Floor ${floor.floor} has fewer than 4 tests`);
+    if(!floor.kind||floor.kind==='js')assert.match(floor.setup,new RegExp(`function ${floor.fn}\\s*\\(`));
+    assert.ok(floor.tests.length>=2,`Floor ${floor.floor} has fewer than 2 checks`);
     for(const spec of floor.tests){
-      assert.ok(Array.isArray(spec.args));
-      assert.ok(Object.hasOwn(spec,'expected'));
+      if(!floor.kind||floor.kind==='js'){assert.ok(Array.isArray(spec.args));assert.ok(Object.hasOwn(spec,'expected'));}
       assert.ok(typeof spec.label==='string'&&spec.label.length>0);
     }
   }

@@ -1,5 +1,7 @@
 import { emit, bus } from '../core/bus.js';
 import { FLOORS, getFloor } from '../content/floors.js';
+import { CHAPTERS } from '../content/extended.js';
+import { gradeContent, inertHTMLPreview } from '../runtime/validators.js';
 import { LESSON_STEPS } from '../learning/lesson.js';
 import { DIAGNOSTIC, assessDiagnostic } from '../content/diagnostic.js';
 import { loadProgress, saveProgress, completeFloor, applyPlacement, registerAttempt, setCurrentFloor, summarize, exportProgress, importProgress, createProgress } from '../state/progress.js';
@@ -48,6 +50,7 @@ export class AppUI {
     bus.addEventListener('ui:challenge',({detail})=>this.openChallenge(detail.floor));
     bus.addEventListener('ui:locked',()=>{this.say('PATCH: The elevator requires a successful terminal challenge.');sound.beep('error');});
     bus.addEventListener('ui:elevator',({detail})=>this.takeElevator(detail.floor));
+    bus.addEventListener('game:elevator:arrived',({detail})=>this.finishElevator(detail.floor));
     bus.addEventListener('game:near',({detail})=>{
       $('in-game-hint').textContent = detail.terminal ? 'TERMINAL IN RANGE · Press E or choose Open challenge' : detail.door ? 'ELEVATOR IN RANGE · Press E to enter when unlocked' : 'A/D or ←/→ to move · W/↑/Space to jump · E to interact';
     });
@@ -55,14 +58,16 @@ export class AppUI {
   persist() { this.progress = saveProgress(this.progress); this.updateHud(); }
   say(message) { $('patch-message').textContent = message; }
   updateHud() {
-    const { cleared, percentage, core } = summarize(this.progress);
+    const {cleared, percentage, cores, chapter} = summarize(this.progress);
     const floor = getFloor(this.progress.currentFloor);
     $('floor-label').textContent = `FLOOR ${String(floor.floor).padStart(2,'0')} / 100`;
+    $('chapter-heading').textContent = CHAPTERS[chapter-1].title.toUpperCase();
+    $('chapter-tag').textContent = `CHAPTER ${String(chapter).padStart(2,'0')} · ${CHAPTERS[chapter-1].topic.toUpperCase()}`;
     $('floor-summary').textContent = `${floor.title} · ${floor.topic}`;
-    $('cores-count').textContent = core ? '1 / 1' : '0 / 1';
-    $('cleared-count').textContent = `${cleared} / 10`;
+    $('cores-count').textContent = `${cores} / 10`;
+    $('cleared-count').textContent = `${cleared} / 100`;
     $('mode-label').textContent = this.progress.mode.toUpperCase();
-    $('chapter-progress').textContent = `${percentage}% CHAPTER PROGRESS`;
+    $('chapter-progress').textContent = `${percentage}% TOWER REPAIRED`;
     $('game-status').textContent = this.progress.completed.includes(floor.floor) ? 'SECURITY DOOR: UNLOCKED' : 'SECURITY DOOR: LOCKED';
   }
   updateSoundButton(){const btn=$('sound-toggle');btn.textContent=`Sound: ${this.progress.sound?'On':'Off'}`;btn.setAttribute('aria-pressed',String(this.progress.sound));}
@@ -148,7 +153,7 @@ export class AppUI {
       <p class="muted small">New to programming? Start at Floor 0. Already know JavaScript? The diagnostic can unlock later floors, but never awards unearned mastery.</p>
     `,'intro');
   }
-  openStory(){this.showModal('STORY ARCHIVE','THE TOWER OF CODE',`<p>Subject 404 is a memory-corrupted stickman trapped inside the hundred-floor Tower of Code. ROOT, the tower administrator, has sealed the exit after a catastrophic system failure.</p><p>PATCH guides you through repairs; NULL appears in the error logs, warning that not everything is as it seems. The Architect's legacy remains hidden at the tower summit.</p><p>This build covers <strong>Chapter I — The Awakening</strong>, Floors 0–10. Chapters II–X are planned future releases.</p>${button('Return to floor map','floor-map')}`,'story');}
+  openStory(){this.showModal('STORY ARCHIVE','THE TOWER OF CODE',`<p>Subject 404 is a memory-corrupted stickman trapped inside the hundred-floor Tower of Code. ROOT, the tower administrator, has sealed the exit after a catastrophic system failure.</p><p>PATCH guides you through repairs; NULL appears in the error logs, warning that not everything is as it seems. The Architect's legacy remains hidden at the tower summit.</p><p>This playable release contains all ten chapters and Floors 0–100. The backend and SQL chapters use browser simulations; complete the separate Tower Control System capstone for real Express/PostgreSQL practice.</p>${button('Return to floor map','floor-map')}`,'story');}
   startBeginner(){this.progress.onboarding=true;this.progress.playedIntro=true;this.progress.currentFloor=0;this.persist();this.gotoFloor(0);}
   openDiagnostic(){
     const rows=DIAGNOSTIC.map((q,i)=>`<fieldset class="question"><legend><span>${String(i+1).padStart(2,'0')}</span> ${escapeHTML(q.question)}</legend><div class="answer-grid">${q.choices.map((a,j)=>`<label><input type="radio" name="diagnostic-${i}" value="${j}"> ${escapeHTML(a)}</label>`).join('')}</div></fieldset>`).join('');
@@ -170,19 +175,24 @@ export class AppUI {
     sound.beep();
   }
   openFloorMap(){
-    const cells=FLOORS.map(f=>{
-      const unlocked=f.floor<=this.progress.unlockedFloor;
-      const completed=this.progress.completed.includes(f.floor);
-      const current=f.floor===this.progress.currentFloor;
-      return `<button type="button" class="floor-cell ${unlocked?'':'floor-locked'} ${current?'floor-current':''}" data-action="floor" data-floor="${f.floor}" ${unlocked?'':'disabled'} aria-label="Floor ${f.floor}: ${escapeHTML(f.title)}, ${unlocked?'unlocked':'locked'}"><span>${String(f.floor).padStart(2,'0')}</span><strong>${escapeHTML(f.title)}</strong><small>${completed?'✓ COMPLETE':current?'● CURRENT':unlocked?'AVAILABLE':'🔒 LOCKED'}</small></button>`;
+    const sections=CHAPTERS.map(ch=>{
+      const group=FLOORS.filter(f=>f.chapter===ch.chapter || (ch.chapter===1&&f.floor===0));
+      const cells=group.map(f=>{
+        const unlocked=f.floor<=this.progress.unlockedFloor;
+        const completed=this.progress.completed.includes(f.floor);
+        const current=f.floor===this.progress.currentFloor;
+        return `<button type="button" class="floor-cell ${unlocked?'':'floor-locked'} ${current?'floor-current':''}" data-action="floor" data-floor="${f.floor}" ${unlocked?'':'disabled'} aria-label="Floor ${f.floor}: ${escapeHTML(f.title)}, ${unlocked?'unlocked':'locked'}"><span>${String(f.floor).padStart(2,'0')}</span><strong>${escapeHTML(f.title)}</strong><small>${completed?'✓ COMPLETE':current?'● CURRENT':unlocked?'AVAILABLE':'🔒 LOCKED'}</small></button>`;
+      }).join('');
+      const won=this.progress.completed.includes(ch.chapter*10);
+      return `<details class="chapter-group" ${ch.chapter===Math.ceil(Math.max(1,this.progress.currentFloor)/10)?'open':''}><summary><strong>CH ${String(ch.chapter).padStart(2,'0')} · ${escapeHTML(ch.title)}</strong> <span>${won?'✓ '+escapeHTML(ch.core):escapeHTML(ch.topic)}</span></summary><div class="floor-grid">${cells}</div></details>`;
     }).join('');
-    this.showModal('CHAPTER I / 10 FLOORS','TOWER FLOOR MAP',`<p class="muted">Choose any unlocked floor for review. Completing a challenge unlocks the next floor. The placement diagnostic may also open earlier material.</p><div class="floor-grid">${cells}</div><div class="quote">CHAPTER II–X · FLOORS 11–100: Future development phases.</div><div class="action-row">${button('View story archive','review-story')}</div>`,'floor-map');
+    this.showModal('TEN CHAPTERS / 100 FLOORS','TOWER FLOOR MAP',`<p class="muted">Choose any unlocked floor. The final floor of each chapter awards its core. Your diagnostic placement can unlock lessons without claiming completion.</p>${sections}<div class="action-row">${button('Story archive','review-story')}${button('Progress report','progress')}</div>`,'floor-map');
   }
   openProgress(){
     const stats=summarize(this.progress);
     const rows=FLOORS.map(f=>`<tr><td>${String(f.floor).padStart(2,'0')}</td><td>${escapeHTML(f.topic)}</td><td>${this.progress.mastered[f.floor]?'Passed':this.progress.completed.includes(f.floor)?'Cleared':'Not passed'}</td><td>${this.progress.attempts[f.floor]??0}</td></tr>`).join('');
     this.showModal('PLAYER RECORD','YOUR LEARNING PROGRESS',`
-      <div class="stat-grid"><div><strong>${stats.percentage}%</strong><small>Chapter complete</small></div><div><strong>${stats.cleared}/10</strong><small>Floors cleared</small></div><div><strong>${this.progress.chapterCompleted?'1':'0'}</strong><small>Logic cores</small></div></div>
+      <div class="stat-grid"><div><strong>${stats.percentage}%</strong><small>Tower complete</small></div><div><strong>${stats.cleared}/100</strong><small>Floors cleared</small></div><div><strong>${stats.cores}</strong><small>Recovered cores</small></div></div>
       <p class="muted">Mode: ${escapeHTML(this.progress.mode)} · ${this.progress.diagnostic?`Diagnostic: ${this.progress.diagnostic.score}/8`:'No diagnostic yet'}</p>
       <div class="action-row">${['guided','practice','mastery'].map(mode=>button(mode[0].toUpperCase()+mode.slice(1),'mode',this.progress.mode===mode?'primary-btn':'secondary-btn',`data-mode="${mode}"`)).join('')}</div>
       <p class="muted small"><strong>Guided:</strong> explanations and hints. <strong>Practice:</strong> fewer prompts. <strong>Mastery:</strong> examples collapsed, but all learning material is still accessible. All modes use the same tests.</p>
@@ -204,17 +214,19 @@ export class AppUI {
     let draft=floor.setup;
     try{draft=localStorage.getItem(DRAFT_KEY+floorNumber)??floor.setup;}catch{}
     this.showModal(`FLOOR ${String(floorNumber).padStart(2,'0')} / ${floor.topic.toUpperCase()}`,floor.title,`
-      <p class="mission-brief">${escapeHTML(LORE[floorNumber])}</p><div class="challenge-layout"><div class="lesson-panel"><div class="section-label">PATCH ACADEMY · NINE-STEP METHOD</div>${lesson}</div>
-      <div class="editor-panel"><div class="editor-header"><span>⌨ JAVASCRIPT TERMINAL</span><span class="editor-language">main.js</span></div>
-        <p class="editor-help">Complete <code>${escapeHTML(floor.fn)}()</code> and run your solution against multiple cases. <strong>All checks must pass</strong> to unlock the elevator.</p>
-        <label for="code-input" class="sr-only">Editable JavaScript solution</label><textarea id="code-input" class="code-input" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="JavaScript solution editor"></textarea>
-        <div class="editor-footer"><span id="test-count">${floor.tests.length} TESTS · ${solved?'✓ PREVIOUSLY CLEARED':'AWAITING EXECUTION'}</span><span>Ctrl+Enter to run</span></div>
+      <p class="mission-brief">${escapeHTML(LORE[floorNumber] ?? `${CHAPTERS[floor.chapter-1].title}: ${floor.dialogue}`)}</p><div class="challenge-layout"><div class="lesson-panel"><div class="section-label">PATCH ACADEMY · NINE-STEP METHOD</div>${lesson}</div>
+      <div class="editor-panel"><div class="editor-header"><span>⌨ ${escapeHTML((floor.kind??'js').toUpperCase())} TERMINAL</span><span class="editor-language">${floor.kind==='html'?'index.html':floor.kind==='css'?'style.css':floor.kind==='sql'?'query.sql':'main.js'}</span></div>
+        <p class="editor-help">${floor.kind==='html'?'Write HTML and pass the structural checks.':floor.kind==='css'?'Write CSS and pass the selector/declaration checks.':floor.kind==='sql'?'Write PostgreSQL SQL and pass the structural checks (not a live database).':`Complete <code>${escapeHTML(floor.fn)}()</code> and pass multiple tests.`} <strong>All checks must pass</strong> to unlock the elevator.${floor.chapter>=6&&floor.kind==='js'?' This lab models a backend concept in browser JavaScript; see capstone/ for live server exercises.':''}</p>
+        <label for="code-input" class="sr-only">Editable JavaScript solution</label><textarea id="code-input" class="code-input" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Code solution editor"></textarea>
+        ${floor.kind==='html'||floor.kind==='css'?'<div class="preview-row"><span>LIVE PREVIEW · isolated frame</span><iframe title="Sandboxed code preview" id="code-preview" sandbox="" referrerpolicy="no-referrer"></iframe></div>':''}<div class="editor-footer"><span id="test-count">${floor.tests.length} TESTS · ${solved?'✓ PREVIOUSLY CLEARED':'AWAITING EXECUTION'}</span><span>Ctrl+Enter to run</span></div>
         <div class="action-row editor-actions">${button('▶ Run tests','run','primary-btn')}${button('Hint','hint')}${button('Reset editor','reset-code')}</div><p id="hint-area" class="hint-area hidden" aria-live="polite"></p><div id="test-feedback" role="status" aria-live="polite">${solved?'<div class="pass-banner">✓ Elevator already unlocked. You can still practice this floor.</div>':''}</div>
-        ${solved?`<div class="action-row">${button(floorNumber===10?'View chapter finale':'Enter next elevator','elevator','primary-btn')}</div>`:''}
+        ${solved?`<div class="action-row">${button(floorNumber===100?'Reach the surface':floorNumber%10===0?'Claim chapter core':'Board elevator','elevator','primary-btn')}</div>`:''}
       </div></div>
     `,'challenge');
     const input=$('code-input');input.value=draft;
-    input.addEventListener('input',()=>{try{localStorage.setItem(DRAFT_KEY+floorNumber,input.value.slice(0,12000));}catch{}});
+    const updatePreview=()=>{const preview=$('code-preview');if(!preview)return;if(floor.kind==='html')preview.srcdoc=inertHTMLPreview(input.value);else if(floor.kind==='css')preview.srcdoc=inertHTMLPreview(`<style>${input.value.replace(/<\/style/gi,'')}</style><div class=\"dashboard\"><div class=\"card\">Tower Control</div><div class=\"card\">Logic Core</div></div><div class=\"panel cores layout\"><button class=\"btn control door\">Signal</button></div>`);};
+    updatePreview();
+    input.addEventListener('input',()=>{try{localStorage.setItem(DRAFT_KEY+floorNumber,input.value.slice(0,12000));}catch{}updatePreview();});
     input.addEventListener('keydown',event=>{
       if(event.key==='Tab'){event.preventDefault();const {selectionStart:start,selectionEnd:end}=input;input.setRangeText('  ',start,end,'end');input.dispatchEvent(new Event('input'));}
       if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();this.gradeChallenge();}
@@ -234,7 +246,7 @@ export class AppUI {
     feedback.innerHTML='<div class="pending-banner">Running isolated tests...</div>';
     this.progress=registerAttempt(this.progress,floorNumber);this.persist();
     let result;
-    try{result=await runChallenge(source,floor);}catch(error){result={passed:false,error:String(error.message),results:[]};}
+    try{result=await gradeContent(source,floor,runChallenge);}catch(error){result={passed:false,error:String(error.message),results:[]};}
     this.running=false;
     // Ignore stale result if player closed or switched floors while running.
     if(this.activeModal!=='challenge'||this.progress.currentFloor!==floorNumber||!feedback.isConnected)return;
@@ -245,23 +257,35 @@ export class AppUI {
     if(result.passed){
       this.progress=completeFloor(this.progress,floorNumber);this.persist();emit('game:solved',{floor:floorNumber});
       sound.beep('ok');this.say(getFloor(floorNumber).success);
-      const area=$('test-feedback');area.insertAdjacentHTML('beforeend',`<p class="muted">You passed ${floor.tests.length} tests. Review the steps above or continue to the elevator.</p><div class="action-row">${button(floorNumber===10?'Claim Logic Core / Finale':'Enter elevator','elevator','primary-btn')}</div>`);
+      const area=$('test-feedback');area.insertAdjacentHTML('beforeend',`<p class="muted">You passed ${floor.tests.length} checks. The security door has opened. Board the lift to see the next story scene.</p><div class="action-row">${button(floorNumber===100?'Face ROOT':floorNumber%10===0?'Claim Core & Board':'Board elevator','elevator','primary-btn')}</div>`);
     }else{sound.beep('error');this.say('PATCH: Bugs are clues, not a verdict. Read the failing cases and try again.');}
   }
   takeElevator(floorNumber){
-    if(!this.progress.completed.includes(floorNumber)){this.say('PATCH: The elevator is locked. Finish the terminal challenge.');return;}
-    if(floorNumber===10){this.openFinale();return;}
+    if(!this.progress.completed.includes(floorNumber)){this.say('PATCH: Elevator locked. Solve the terminal first.');return;}
+    if(this.elevatorInProgress)return;
+    this.elevatorInProgress=true;
+    this.closeModal();
+    this.say('PATCH: Elevator doors open. Try to look like you know where we are going.');
+    emit('game:elevator:begin',{floor:floorNumber});
+  }
+  finishElevator(floorNumber){
+    if(!this.elevatorInProgress||this.progress.currentFloor!==floorNumber)return;
+    this.elevatorInProgress=false;
+    if(floorNumber===100){this.openFinale();return;}
     const next=floorNumber+1;
-    if(next>10)return;
     this.gotoFloor(next);
-    this.showModal(`FLOOR ${String(next).padStart(2,'0')} / ARRIVAL`,`WELCOME TO ${getFloor(next).title.toUpperCase()}`,`<div class="arrival-card"><span class="eyebrow">SECTOR 01 · CONTINUE ASCENT</span><p>${escapeHTML(LORE[next])}</p><div class="quote">${escapeHTML(getFloor(next).dialogue)}</div></div><div class="action-row">${button('Start coding mission','challenge','primary-btn')}${button('Explore floor','floor-map')}</div>`,'arrival');
+    const previousChapter=getFloor(floorNumber).chapter;
+    const coreScene=floorNumber>0&&floorNumber%10===0;
+    const header=coreScene?`CORE ${previousChapter} RESTORED · ${CHAPTERS[previousChapter-1].core.toUpperCase()}`:`FLOOR ${String(next).padStart(2,'0')} / ARRIVAL`;
+    const story=coreScene?`<p>ROOT: "Core recovered. Containment holds." PATCH: "Another chapter survived. Nine kinds of problem-solving and only a few existential crises."</p>`:`<p>${escapeHTML(getFloor(next).dialogue)}</p>`;
+    this.showModal(header,`WELCOME TO ${getFloor(next).title.toUpperCase()}`,`<div class="arrival-card"><span class="eyebrow">CHAPTER ${getFloor(next).chapter} · CONTINUE ASCENT</span>${story}<div class="quote">${escapeHTML(getFloor(next).dialogue)}</div></div><div class="action-row">${button('Start next mission','challenge','primary-btn')}${button('Explore tower','floor-map')}</div>`,'arrival');
   }
   openFinale(){
-    this.showModal('CHAPTER I / COMPLETE','THE LOGIC CORE IS RESTORED',`<div class="finale"><div class="core-orb" aria-hidden="true">◇</div><p class="terminal-green">&gt; CHAPTER 01: COMPLETE<br>&gt; LOGIC CORE: ONLINE<br>&gt; SUBJECT 404: VERIFIED<br>&gt; TOWER STATUS: 10 / 100 FLOORS RESTORED</p><blockquote>ROOT: "Containment remains active. One core is not enough."<br><br>PATCH: "Ten floors, one core, and somehow we're still alive. I call that progress."<br><br>NULL: "If you're reading this... don't trust the elevator."</blockquote><p><strong>Chapter I unlocked a new mystery.</strong> Chapter II will teach HTML and the foundations of the Tower Control System.</p></div><div class="action-row">${button('Review progress','progress','primary-btn')}${button('Replay floors','floor-map')}${button('Story archive','review-story')}</div>`,'finale');
+    this.showModal('TOWER OF CODE / THE END','SYSTEM RESTORED · FREEDOM GRANTED',`<div class="finale"><div class="core-orb" aria-hidden="true">◇</div><p class="terminal-green">&gt; ALL TEN CHAPTERS CLEARED<br>&gt; ROOT: CONTAINMENT RELEASED<br>&gt; IDENTITY: DEVELOPER<br>&gt; TOWER STATUS: 100 / 100</p><blockquote>ROOT: "Containment was never meant to imprison you. It protected the world from an incomplete system."<br><br>PATCH: "You escaped a hundred floors of bugs. Now you’re qualified to create your own."<br><br>NULL: "See you outside, Subject 404."</blockquote><p>The city lights turn on. Subject 404 steps into the outside world. Your next mission is independent full-stack engineering.</p><p class="muted">Game completion documents in-game assessment only. Build, test and deploy the included real Tower Control System capstone separately for hands-on Node, Express, PostgreSQL, JWT and production practice.</p></div><div class="action-row">${button('Review progress','progress','primary-btn')}${button('Replay floors','floor-map')}${button('Story archive','review-story')}</div>`,'finale');
   }
   openHelp(){this.showModal('SYSTEM HELP','HOW TO PLAY',`
     <div class="help-grid"><div><kbd>A</kbd> / <kbd>←</kbd><p>Move left</p></div><div><kbd>D</kbd> / <kbd>→</kbd><p>Move right</p></div><div><kbd>W</kbd> / <kbd>↑</kbd> / <kbd>SPACE</kbd><p>Jump</p></div><div><kbd>SHIFT</kbd><p>Run</p></div><div><kbd>E</kbd><p>Interact with a terminal or elevator when nearby</p></div><div><kbd>Ctrl</kbd> + <kbd>Enter</kbd><p>Run code tests while editing</p></div></div><p>Touch controls appear below the game on small screens. You can also open the coding challenge using the button below the game from anywhere on the floor.</p><p>Learn the concepts using PATCH's nine-step lesson panels; then edit JavaScript and pass all automated tests. Errors don't cost lives.</p><div class="action-row">${button('Back to game','floor-map')}${button('Open coding terminal','challenge','primary-btn')}</div>`,'help');}
-  downloadProgress(){const data=exportProgress(this.progress);const blob=new Blob([data],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='codebreak-save-v2.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  downloadProgress(){const data=exportProgress(this.progress);const blob=new Blob([data],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='codebreak-save-v2-compatible.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   async handleImport(file){
     if(!file)return;
     if(file.size>128000){this.say('PATCH: Save file exceeds the 128 KB limit.');this.openProgress();return;}

@@ -1,7 +1,7 @@
 {
   "name": "codebreak-tower-of-code",
   "private": true,
-  "version": "0.2.0",
+  "version": "1.0.0-rc.1",
   "type": "module",
   "description": "CodeBreak: The Tower of Code — browser-based learning adventure",
   "scripts": {

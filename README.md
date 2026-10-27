@@ -1,191 +1,112 @@
 # CODEBREAK: THE TOWER OF CODE
 
-**Release:** `v0.2.0` — Chapter I: The Awakening  
-**Scope:** Phases 01–09, Floors 0–10 (prologue + ten JavaScript learning floors)  
-**Platform:** Modern Chromium or Firefox on Ubuntu; responsive touch controls included.  
-**Stack:** JavaScript ES modules, Phaser 3 Arcade Physics, Vite 8, native browser APIs.
+**v1.0.0-rc.1 — Complete 100-floor browser campaign / release candidate**
 
-> Enter as a beginner. Escape as a full-stack developer. The complete 100-floor story is the **long-term design**, not what this v0.2.0 archive contains. This archive implements the playable first chapter only.
+A story-driven stickman programming game following Subject 404, PATCH, ROOT, NULL, and the missing Architect. Ten chapters introduce JavaScript, HTML, CSS, browser JavaScript, async work, Node.js, Express, PostgreSQL/SQL, JWT/security and full-stack integration. Each floor has the user's nine-stage learning sequence. The full-stack material includes **browser learning simulations** AND a **separate runnable Tower Control System Express/PostgreSQL capstone**.
 
-## 1. INSTALL INTO YOUR EXISTING GITHUB REPOSITORY — IMPORTANT
+> **Status:** Feature implementation/release candidate — **NOT** a production launch or accredited full-stack certification. Public deployment, real database integration, full animations and cross-browser accessibility still require local/external verification.
 
-Your repository is already in `~/Documents/codebreak` and has its own `.git` directory and first commit. **Do not run `git init`, remove `.git`, or overwrite your GitHub repository.**
-
-Back up and create a feature branch before applying these source files:
+## 1. Apply to your existing Ubuntu repository
 
 ```bash
 cd ~/Documents/codebreak
-npm run build                      # optional: verify your existing baseline
-cp -a ~/Documents/codebreak ~/Documents/codebreak-backup-before-v0.2
-
 git status
-# Ensure your existing changes are committed/stashed before switching branches.
-git switch -c feature/chapter1-phases02-09
-```
-
-Download `CodeBreak_Phases01-09_v0.2.0.zip` and extract its contents **directly into** `~/Documents/codebreak`, for example:
-
-```bash
-unzip -o ~/Downloads/CodeBreak_Phases01-09_v0.2.0.zip -d ~/Documents/codebreak
-cd ~/Documents/codebreak
+# Commit your current work before continuing.
+cp -a ~/Documents/codebreak ~/Documents/codebreak-backup-before-v1
+# If on the old release branch, make a new development branch:
+git switch -c feature/full-tower-v1-rc1
+unzip -o ~/Downloads/CodeBreak_Full_Tower_Phases10-15_v1.0.0-rc1.zip -d ~/Documents/codebreak
 npm install
 npm test
 npm run build
 npm run dev
 ```
 
-**Find the ZIP before running unzip**: the downloaded path may differ depending on your browser. The ZIP deliberately contains no `.git`, `node_modules`, or old `package-lock.json`. `npm install` updates your existing lockfile for the release's dependencies.
+Visit **http://127.0.0.1:5173/** (Vite reports the actual local address). Do not extract on top of `node_modules/`, `.git/` or `dist/`: those are intentionally absent from the ZIP. All previous Git commits remain intact. Old saved progress under `codebreak:progress:v2` remains compatible; export it first for safety.
 
-Once local tests pass, visit **http://localhost:5173/**. On the first launch, start Floor 0 as a beginner or take the optional placement assessment.
+If you have not yet committed your v0.2.0 branch, commit it before extracting. Do not merge into `main` until playtesting passes.
 
-To stop the Vite server, press `Ctrl+C` in that terminal.
+## 2. Main controls
+- `A`/`D`, arrows: move. `W` / `Space` / Up: jump. Shift: sprint. `E`: interact near the terminal/elevator.
+- **Open challenge** also opens the current floor remotely. Complete editor challenges, pass each check, then press **Board elevator**, or walk to the lift and press `E`.
+- A successfully solved floor animates the elevator doors opening. Boarding runs Subject 404 into the open lift, fades out, loads the next room, and triggers chapter/core story beats.
+- Floor map groups chapters and allows revisiting unlocked rooms.
+- Save progress is browser-local, export/import JSON. Diagnostic grants access only, never mastery.
 
-## 2. NEXT STEPS IN ORDER
+## 3. Chapters
+| Chapter | Floors | Curriculum | Core |
+|---|---:|---|---|
+| 1 The Awakening | 0–10 | JavaScript fundamentals | Logic |
+| 2 Invisible Structure | 11–20 | Semantic HTML | Structure |
+| 3 Architect's Lab | 21–30 | CSS, Flexbox, Grid and responsive design | Design |
+| 4 Living Machine | 31–40 | Browser JavaScript, DOM concepts | Interaction |
+| 5 Signal Network | 41–50 | Promises, HTTP, JSON, async functions | Network |
+| 6 Engine Room | 51–60 | Node.js concepts (simulated in browser) | Runtime |
+| 7 Server Citadel | 61–70 | Express/REST concepts (simulated in browser) | API |
+| 8 Memory Vault | 71–80 | PostgreSQL SQL editor + structural checks (no DB execution in-game) | Memory |
+| 9 Identity Gate | 81–90 | Authentication/JWT/authorization models | Security |
+| 10 Final Deployment | 91–100 | Full-stack integration models, ROOT finale | Freedom |
 
-1. Make the backup and feature branch (above).
-2. Extract ZIP into the existing repository root.
-3. Run `npm install` (requires internet the first time).
-4. Run `npm test` and verify all checks pass.
-5. Run `npm run build` and confirm Vite reports success.
-6. Run `npm run dev`; open the game in Firefox or Chromium.
-7. Complete the [manual QA checklist](docs/PLAYTEST_CHECKLIST.md) including valid code, invalid code, timeouts, and save/reload.
-8. Inspect your changes: `git status` and `git diff --stat`.
-9. When satisfied, commit to your feature branch:
+**Important distinction:** HTML has DOM checks, CSS has CSSOM checks, SQL uses transparent structural checks, and JS uses a browser-isolated worker. **Back-end functions in the game are models**, not actual Node/Express execution. The `capstone/` folder contains the live server and PostgreSQL project; follow `capstone/README.md` to run it separately.
 
-   ```bash
-   git add .
-   git commit -m "feat: implement CodeBreak Chapter I phases 2-9"
-   git push -u origin feature/chapter1-phases02-09
-   ```
-
-10. Send playtest feedback to ChatGPT (browser, console errors, screenshots, failed tests, visual feedback). We will fix regressions before implementing Phase 10.
-
-For users who want to remain on `main` instead of a branch, do so only after reviewing the change: `git switch main && git merge feature/chapter1-phases02-09 && git push origin main`.
-
-## 3. CONTROLS
-
-| Action | Keys / controls |
-|---|---|
-| Walk | `A` / `D` or `←` / `→` |
-| Jump | `W`, `↑` or `Space` |
-| Sprint | `Shift` while moving |
-| Open nearby terminal | `E` |
-| Enter unlocked elevator | `E` when near door, or use button after passing tests |
-| Open challenge from anywhere | **Open challenge** button below scene |
-| Execute code | **Run tests** or `Ctrl+Enter` inside the editor |
-| Insert indentation in editor | `Tab` |
-| Close pop-up | `Escape` |
-| Touch | Movement, Jump and Use buttons below scene at narrow viewport widths |
-
-## 4. FEATURES BY IMPLEMENTATION PHASE
-
-| Phase | Included functionality |
-|---|---|
-| **01 — Setup** | Vite project, Phaser dependency, npm commands, README, git-safe archive |
-| **02 — Stickman** | Original vector-drawn stickman, walk/run/jump/fall/idle poses, Arcade Physics collisions |
-| **03 — World** | Scrolling tower sector, camera follow, raised platforms, terminals, elevator, per-floor scene reload |
-| **04 — Story** | Prologue, PATCH/ROOT dialogue, ROOT warning, NULL hint, story archive, floor arrival scenes |
-| **05 — Challenges** | Browser code editor, authored evaluation cases, sandboxed code execution, result feedback, timeout |
-| **06 — Learning** | All **nine** study-method sections for each floor, examples, real-life applications, exercises, hints |
-| **07 — Progress** | Local saves, schema version, safe recovery, export/import JSON, mastery per passed floor, placement diagnostic |
-| **08 — Chapter I** | Floor 0 + Floors 1–10, unique puzzles, Infinite Loop boss, Logic Core and chapter-ending sequence |
-| **09 — Polish** | Keyboard and responsive controls, reduced-motion CSS, procedural optional sound, floor map, progress dashboard, automated regressions and QA plan |
-
-## 5. LEARNING CONTENT
-
-Floor 0 is the story prologue and programming introduction. Floors 1–10 cover values and comparisons, Boolean conditions, if/else, for loops, arrays, objects and searching, strings, functions and defaults, filtering data, and a combined elevator-controller boss.
-
-Every lesson follows the nine-step study sequence:
-
-1. Objectives
-2. Key definitions
-3. Step-by-step explanation
-4. Visualization
-5. Worked code example
-6. Real-world applications
-7. Exercise
-8. Mini-project
-9. Main project connection
-
-**Important:** passing the authored browser tests demonstrates progress in an individual *game challenge*. It does not prove production competence or grant a professional certification. The diagnostic recommends a starting floor but does not mark earlier missions completed.
-
-## 6. BROWSER CODE EXECUTION SAFETY
-
-Student code is evaluated in a **Web Worker inside a sandboxed iframe** without `allow-same-origin`. The iframe sets a restrictive Content Security Policy to block outgoing connections; a timeout discards the iframe/worker after 2.4 seconds. Student code never executes inside the Phaser game page or in the trusted application server.
-
-Do not interpret this as a production-grade hostile-code runner. Client-side tests can be inspected or bypassed, browser sandbox behavior varies, and hostile code security must be independently reviewed before public deployment. Advanced Node/Express challenges in future phases require an entirely separate server execution service with strong isolation, resource limits, rate limiting, network restrictions, and auditing. Never put credentials or private data into challenge code.
-
-## 7. DATA STORAGE
-
-Progress is saved in the current browser via `localStorage`, key `codebreak:progress:v2`. Save files can be downloaded and imported via **My progress**. This build has no account server or cloud sync. Browser data removal will erase saves unless you previously exported them.
-
-Project state is versioned and imported records are shape-checked. Imported local saves are not cryptographically verified and should not be used for competitive leaderboards or certification.
-
-## 8. PROJECT STRUCTURE
-
-```text
-codebreak/
-├── index.html                       Main browser screen
-├── package.json                     npm scripts and Phaser / Vite versions
-├── src/
-│   ├── main.js                       Phaser + interface startup
-│   ├── style.css                     Game and learning interface theme
-│   ├── content/
-│   │   ├── floors.js                 11 authored missions, example starters, tests
-│   │   └── diagnostic.js             Eight onboarding questions + placement
-│   ├── core/
-│   │   ├── bus.js                    Event bus between Phaser and HTML interface
-│   │   └── sound.js                  Tiny procedural audio cues
-│   ├── game/GameScene.js             Stickman, camera, platforms, interaction
-│   ├── learning/lesson.js            Nine-step lesson contract
-│   ├── runtime/sandbox.js            Sandboxed JS evaluation
-│   ├── state/progress.js             Save/restore, unlock, import/export
-│   └── ui/app.js                     Story, lessons, terminal, menus, diagnostic
-├── public/favicon.svg
-├── tests/
-│   ├── challenges.test.js            Test-only correct solutions
-│   ├── curriculum.test.js            Content structure checks
-│   ├── progress.test.js              Persistence and progression checks
-│   └── browser/sandbox.html          Browser sandbox regression page
-└── docs/
-    ├── CodeBreak_Complete_Game_Design_and_Implementation.md
-    ├── CodeBreak_Phases_01-09_Implementation_Guide.md
-    ├── PHASES_01-09_RELEASE_NOTES.md
-    └── PLAYTEST_CHECKLIST.md
+## 4. Development checks
+```bash
+npm test
+npm run build
+npm run dev
 ```
 
-## 9. TESTING & LIMITATIONS
+Browser validator harness (requires running Vite server): `http://127.0.0.1:5173/tests/browser/extended.html`. It runs authored structural exercise checks and representative browser JS sandbox tests. For comprehensive user-level QA see `docs/PLAYTEST_V1.md`.
 
-`npm test` runs Node's built-in unit tests. `npm run build` uses locally installed Vite. For an additional browser check, open **http://localhost:5173/tests/browser/sandbox.html** after `npm run dev`. It runs a valid, invalid, syntax-error and infinite-loop case in the browser.
+## 5. Real full-stack practice
+Run a separate local PostgreSQL database with Docker (optional but convenient):
 
-**Testing conducted when this ZIP was prepared:** Node tests for curriculum/solutions/saves passed; headless Chromium passed the isolated executor's correct/incorrect/syntax-error/timeout cases; headless Chromium also stepped through every authored chapter challenge and reached the ending in an HTML-interface integration harness without uncaught JavaScript errors. The development container could **not install Phaser/Vite from npm**, so a real Phaser+Vite browser build and actual game physics/animation playtest could not be verified here. Run the build and check movement locally before considering this release fully verified.
+```bash
+docker compose -f capstone/compose.dev.yml up -d
+cd capstone/server
+cp .env.example .env
+# Set JWT_SECRET in .env using `openssl rand -hex 32`.
+npm install
+npm run migrate
+npm test
+npm run dev
+```
 
-Known scope boundaries:
-- Only Chapter I (Floors 0–10) is playable: the complete 100-floor story remains the design target.
-- The editor is a lightweight accessible text area, **not Monaco**; full editor features are reserved for later enhancements.
-- Lessons include exercises and suggested mini-projects, but mini-projects are not yet independently graded or exported as separate repos.
-- No production backend, PostgreSQL, cloud accounts, or real Node/Express evaluation yet.
-- No professional game audio, cinematic videos, or custom sprite sheets; the character is original geometric artwork animated programmatically.
-- Touch layout has responsive controls but should still be tested on physical devices.
+Open `http://127.0.0.1:4500/`. This is a standalone API + dashboard with user registration/login and owner-scoped CRUD. It is bound to loopback only; don't expose it publicly without a complete production security review.
 
-## 10. TROUBLESHOOTING
+## 6. Repository structure
+```text
+codebreak/
+├── index.html
+├── src/
+│   ├── content/{floors.js,extended.js,diagnostic.js}
+│   ├── game/GameScene.js
+│   ├── runtime/{sandbox.js,validators.js}
+│   ├── state/progress.js
+│   ├── learning/lesson.js
+│   ├── ui/app.js
+│   └── core/{bus.js,sound.js}
+├── capstone/
+│   ├── compose.dev.yml
+│   ├── client/{index.html,app.js,style.css}
+│   └── server/{src/,sql/,tests/}
+├── tests/
+│   ├── browser/extended.html
+│   └── *.test.js
+└── docs/
+    ├── PHASES_10-15_IMPLEMENTATION.md
+    ├── ARCHITECTURE_V1.md
+    ├── QA_REPORT.md
+    ├── PLAYTEST_V1.md
+    ├── PHASE_15_DEPLOYMENT.md
+    └── FUTURE_MODIFICATIONS.md
+```
 
-**npm says ENOENT / cannot find package.json**: you are probably not in the repository root. Run `cd ~/Documents/codebreak && ls package.json`.
+## 7. Known constraints
+- Phaser/Vite dependencies could **not** be downloaded in the artifact build environment, so **this updated ZIP's production bundle and actual Phaser physics were not locally built or reverified**. Your existing Ubuntu installation previously built successfully; run `npm install && npm run build` on your laptop for this revision.
+- The real Express/PostgreSQL capstone also requires installation, local database migration, and integration/security testing. It was not deployed and no live database test has been run here.
+- This offline learning game is not a cheating-resistant assessment platform: lesson solutions can be inspected from client-side source. Do not use floor passes as credentials or professional certification.
+- UI and structural exercise checks provide helpful feedback but do not substitute for full accessibility, rendering, semantic correctness, SQL execution or production grading.
 
-**'vite: command not found'**: run `npm install` in the root.
-
-**Node engine error**: use a supported Node.js LTS version (`node --version`). Vite 8 requires a sufficiently new supported Node release.
-
-**Black game canvas**: check the browser console (F12 → Console), verify Phaser installed, and share the first red error message; do not delete `.git`.
-
-**Stuck on a floor**: use **Open challenge** even if you cannot reach the terminal, solve all test cases, and use the **Enter elevator** button.
-
-**Blank/corrupt progress**: inspect **My progress** and import an earlier exported backup. The game attempts to isolate malformed saved state and start fresh.
-
-**Tests pass but movement fails**: the Node tests do not simulate Phaser physics. This needs a real-browser playtest.
-
-## 11. DESIGN DOCUMENTATION
-
-Read the master architecture in `docs/CodeBreak_Complete_Game_Design_and_Implementation.md`, the phase checklist in `docs/CodeBreak_Phases_01-09_Implementation_Guide.md`, and the release-specific notes in `docs/PHASES_01-09_RELEASE_NOTES.md`.
-
-**Do not skip feedback:** verify v0.2.0 thoroughly before moving to Phase 10 (HTML/CSS/browser frontend chapters).
+## 8. License & references
+Project intended as the author's original educational game. No third-party copied character assets are included: the white stickman is rendered as original Phaser graphics. Reuse of dependencies is governed by their respective licenses.

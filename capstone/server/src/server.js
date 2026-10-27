@@ -1,0 +1,11 @@
+import 'dotenv/config';
+import express from 'express';
+import {fileURLToPath} from 'node:url';
+import {pool} from './db.js';
+import {makeApp} from './app.js';
+const port=Number(process.env.PORT||4500);
+const app=makeApp({db:pool,secret:process.env.JWT_SECRET,issuer:process.env.JWT_ISSUER||'codebreak-capstone',audience:process.env.JWT_AUDIENCE||'codebreak-dashboard',allowedOrigin:process.env.ALLOWED_ORIGIN||`http://127.0.0.1:${port}`});
+app.use(express.static(fileURLToPath(new URL('../../client/',import.meta.url))));
+const server=app.listen(port,'127.0.0.1',()=>console.log(`Tower Control System http://127.0.0.1:${port}`));
+const shutdown=()=>server.close(()=>pool.end().finally(()=>process.exit(0)));
+process.on('SIGTERM',shutdown);process.on('SIGINT',shutdown);

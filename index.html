@@ -5,24 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#080d19" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <meta name="description" content="CodeBreak: The Tower of Code. Learn real JavaScript through a cinematic stickman adventure." />
+    <meta name="description" content="CodeBreak: The Tower of Code. Learn full-stack web development across 100 floors through an animated stickman coding adventure." />
     <title>CodeBreak — The Tower of Code</title>
   </head>
   <body>
     <div id="app">
       <header class="site-header">
         <div class="brand"><div class="brand-mark" aria-hidden="true">&lt;/&gt;</div><div><strong>CODEBREAK</strong><span>THE TOWER OF CODE</span></div></div>
-        <div class="top-actions"><span class="version">CHAPTER I · v0.2.0</span><button id="sound-toggle" class="quiet-btn" type="button" aria-pressed="false">Sound: Off</button><button id="help-button" class="quiet-btn" type="button">Controls</button></div>
+        <div class="top-actions"><span class="version">TEN CHAPTERS · v1.0.0-rc.1</span><button id="sound-toggle" class="quiet-btn" type="button" aria-pressed="false">Sound: Off</button><button id="help-button" class="quiet-btn" type="button">Controls</button></div>
       </header>
       <main class="shell">
         <div class="dashboard">
-          <div class="dashboard-title"><span class="eyebrow">SUBJECT 404 · SIMULATION ACTIVE</span><h1>THE AWAKENING <span class="floor-label" id="floor-label">FLOOR 00 / 100</span></h1><p id="floor-summary" class="subhead">Recover your identity and ascend.</p></div>
-          <div class="dashboard-metrics"><div class="metric"><small>LOGIC CORES</small><b id="cores-count">0 / 1</b></div><div class="metric"><small>FLOORS CLEARED</small><b id="cleared-count">0 / 10</b></div><div class="metric"><small>MODE</small><b id="mode-label">GUIDED</b></div></div>
+          <div class="dashboard-title"><span class="eyebrow"><span id="chapter-tag">CHAPTER 01 · JAVASCRIPT FOUNDATIONS</span> · SUBJECT 404</span><h1><span id="chapter-heading">THE AWAKENING</span> <span class="floor-label" id="floor-label">FLOOR 00 / 100</span></h1><p id="floor-summary" class="subhead">Recover your identity and ascend.</p></div>
+          <div class="dashboard-metrics"><div class="metric"><small>RECOVERED CORES</small><b id="cores-count">0 / 10</b></div><div class="metric"><small>FLOORS CLEARED</small><b id="cleared-count">0 / 100</b></div><div class="metric"><small>MODE</small><b id="mode-label">GUIDED</b></div></div>
         </div>
         <div class="game-card">
           <div class="game-top"><span><span class="status-dot"></span> TOWER FEED <span class="hidden-small">/ SECTOR 01</span></span><span id="game-status">CONNECTING TO SIMULATION...</span></div>
-          <div class="canvas-wrapper"><div id="game" role="img" aria-label="Side-scrolling game view with a stick figure, coding terminal, and elevator"></div><div class="in-game-hint" id="in-game-hint" role="status">Move with A/D or ←/→ · Jump with W, ↑ or Space · Press E near the terminal</div></div>
-          <div class="game-bottom"><span><kbd>A</kbd> <kbd>D</kbd> MOVE &nbsp; <kbd>W</kbd> JUMP &nbsp; <kbd>E</kbd> INTERACT</span><div class="mobile-controls" aria-label="Touch controls"><button type="button" data-control="left" aria-label="Move left">◀</button><button type="button" data-control="right" aria-label="Move right">▶</button><button type="button" data-control="jump">JUMP</button><button type="button" data-control="interact">USE</button></div><span id="chapter-progress" class="progress-label">0% CHAPTER PROGRESS</span></div>
+          <div class="canvas-wrapper"><div id="game" role="img" aria-label="Side-scrolling game view with an animated stick figure, coding terminal, and opening elevator"></div><div class="in-game-hint" id="in-game-hint" role="status">Move with A/D or ←/→ · Jump with W, ↑ or Space · Press E near the terminal</div></div>
+          <div class="game-bottom"><span><kbd>A</kbd> <kbd>D</kbd> MOVE &nbsp; <kbd>W</kbd> JUMP &nbsp; <kbd>E</kbd> INTERACT</span><div class="mobile-controls" aria-label="Touch controls"><button type="button" data-control="left" aria-label="Move left">◀</button><button type="button" data-control="right" aria-label="Move right">▶</button><button type="button" data-control="jump">JUMP</button><button type="button" data-control="interact">USE</button></div><span id="chapter-progress" class="progress-label">0% TOWER REPAIRED</span></div>
         </div>
         <div class="bottom-area"><div class="tip-card"><div class="patch-avatar" aria-hidden="true">:)</div><div><span class="eyebrow">PATCH / YOUR QUESTIONABLE COMPANION</span><p id="patch-message">Welcome, Subject 404. We should probably start with the basics. Like existing.</p></div></div><div class="quick-actions"><button id="learn-button" class="primary-btn" type="button">⌨ Open challenge</button><button id="floors-button" class="secondary-btn" type="button">Floor map</button><button id="progress-button" class="secondary-btn" type="button">My progress</button></div></div>
       </main>

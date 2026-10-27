@@ -1,3 +1,4 @@
+import { EXTENDED_FLOORS } from './extended.js';
 /** Chapter I floor metadata. Each lesson follows the nine-stage study method. */
 const make = (floor, title, topic, fn, setup, tests, lesson) => ({
   floor, title, topic, fn, setup, tests, chapter: 1,
@@ -18,7 +19,7 @@ const make = (floor, title, topic, fn, setup, tests, lesson) => ({
   success: lesson.success ?? 'PATCH: "The system actually works. Suspicious, but I\'ll allow it."'
 });
 
-export const FLOORS = [
+const FOUNDATION_FLOORS = [
   make(0, 'Subject Not Found', 'First contact · functions', 'identify',
 `function identify(name) {
   // Return a usable name. Blank names become 'Subject 404'.
@@ -250,5 +251,6 @@ export const FLOORS = [
  })
 ];
 
-export const FLOOR_COUNT = 10;
-export function getFloor(number) { return FLOORS.find(floor => floor.floor === Number(number)) ?? FLOORS[0]; }
+export const FLOORS = [...FOUNDATION_FLOORS, ...EXTENDED_FLOORS];
+export const FLOOR_COUNT = 100;
+export function getFloor(number) { return FLOORS[Number(number)] ?? FLOORS[0]; }

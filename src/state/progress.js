@@ -7,7 +7,7 @@ export function createProgress() {
   return {
     version: VERSION, currentFloor: 0, unlockedFloor: 0, completed: [], attempts: {},
     mastered: {}, mode: 'guided', onboarding: false, diagnostic: null,
-    sound: false, playedIntro: false, chapterCompleted: false, updatedAt: new Date().toISOString()
+    sound: false, playedIntro: false, chapterCompleted: false, gameCompleted: false, updatedAt: new Date().toISOString()
   };
 }
 function validFloor(n) { return Number.isInteger(n) && n >= 0 && n <= FLOOR_COUNT; }
@@ -29,14 +29,15 @@ export function normalizeProgress(candidate) {
   base.mode = ['guided', 'practice', 'mastery'].includes(candidate.mode) ? candidate.mode : 'guided';
   base.onboarding = candidate.onboarding === true;
   base.playedIntro = candidate.playedIntro === true;
-  base.chapterCompleted = candidate.chapterCompleted === true && base.completed.includes(10);
+  base.chapterCompleted = base.completed.includes(10);
+  base.gameCompleted = base.completed.includes(100);
   base.sound = candidate.sound === true;
   base.diagnostic = candidate.diagnostic && typeof candidate.diagnostic === 'object'
     && Number.isInteger(candidate.diagnostic.score) && candidate.diagnostic.score >= 0 && candidate.diagnostic.score <= 8
     ? { score: candidate.diagnostic.score, total: 8, recommendedFloor: validFloor(candidate.diagnostic.recommendedFloor) ? candidate.diagnostic.recommendedFloor : 1 } : null;
   base.updatedAt = typeof candidate.updatedAt === 'string' ? candidate.updatedAt : base.updatedAt;
   // Completing a floor always unlocks its successor; a diagnostic can unlock additional floors.
-  for (const n of base.completed) base.unlockedFloor = Math.max(base.unlockedFloor, Math.min(10, n + 1));
+  for (const n of base.completed) base.unlockedFloor = Math.max(base.unlockedFloor, Math.min(FLOOR_COUNT, n + 1));
   base.currentFloor = Math.min(base.currentFloor, base.unlockedFloor);
   return base;
 }
@@ -57,8 +58,9 @@ export function completeFloor(progress, floor) {
   const next = normalizeProgress(progress);
   next.completed = [...new Set([...next.completed, floor])].sort((a,b)=>a-b);
   next.mastered[String(floor)] = true; // All automated tests passed; counts as floor-level mastery only.
-  next.unlockedFloor = Math.max(next.unlockedFloor, Math.min(10, floor + 1));
+  next.unlockedFloor = Math.max(next.unlockedFloor, Math.min(FLOOR_COUNT, floor + 1));
   if (floor === 10) next.chapterCompleted = true;
+  if (floor === 100) next.gameCompleted = true;
   return next;
 }
 export function registerAttempt(progress, floor) {
@@ -79,8 +81,11 @@ export function setCurrentFloor(progress, floor) {
   const next = normalizeProgress(progress); next.currentFloor = floor; return next;
 }
 export function summarize(progress) {
-  const cleared = progress.completed.filter(n => n >= 1 && n <= 10).length;
-  return { cleared, total: FLOOR_COUNT, percentage: Math.round(cleared / FLOOR_COUNT * 100), core: progress.chapterCompleted, current: getFloor(progress.currentFloor).title };
+  const cleared = progress.completed.filter(n => n >= 1 && n <= FLOOR_COUNT).length;
+  const chapter = Math.max(1,Math.ceil(Math.max(progress.currentFloor,1)/10));
+  const chapterCleared = progress.completed.filter(n => n >= (chapter-1)*10+1 && n <= chapter*10).length;
+  const cores = Array.from({length:10},(_,i)=>(i+1)*10).filter(n=>progress.completed.includes(n)).length;
+  return {cleared,total:FLOOR_COUNT,percentage:Math.round(cleared/FLOOR_COUNT*100),core:progress.chapterCompleted,cores,chapter,chapterCleared,gameCompleted:progress.gameCompleted,current:getFloor(progress.currentFloor).title};
 }
 export function exportProgress(progress) { return JSON.stringify(normalizeProgress(progress), null, 2); }
 export function importProgress(text) { return normalizeProgress(JSON.parse(text)); }
