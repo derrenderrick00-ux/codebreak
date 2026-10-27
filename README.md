@@ -110,3 +110,6 @@ codebreak/
 
 ## 8. License & references
 Project intended as the author's original educational game. No third-party copied character assets are included: the white stickman is rendered as original Phaser graphics. Reuse of dependencies is governed by their respective licenses.
+
+## v1.1.0-rc.1 P0–P2 refinement update
+See `docs/P0_P2_REFINEMENT_RELEASE.md` for the priority matrix, diagrams and limitations; `docs/P0_P2_ACCEPTANCE_CHECKLIST.md` for manual checks; and `docs/BACKUP_UPGRADE_ROLLBACK.md` for safe Ubuntu installation and rollback. The original browser progress schema remains compatible.

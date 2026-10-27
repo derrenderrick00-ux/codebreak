@@ -16,6 +16,7 @@ export class GameScene extends Phaser.Scene {
     this.room = getFloor(this.floor);
     this.isLocked = document.body.classList.contains('dialog-open');
     this.state = 'idle'; this.frameNo = 0; this.doorOpen = 0; this.transitioning = false; this.facing = 1;
+    this.wasGrounded = false;this.landPulse=0;this.boardingStage='';
     this.virtual = {left:false,right:false,jump:false};
     this.floorSolved = initialFloor === undefined ? persisted.completed.includes(this.floor) : Boolean(this.registry.get('solved'));
     this.registry.set('floor', this.floor);
@@ -117,7 +118,7 @@ export class GameScene extends Phaser.Scene {
     g.lineBetween(x-offset,332,x-offset,450);
     g.lineBetween(x+offset,332,x+offset,450);
     g.fillStyle(safe?0x64edb5:0xfd687d,1).fillCircle(x+37,391,4);
-    if(this.doorLabel){this.doorLabel.setText(safe?(open>.96?'OPEN':'OPENING'):'LOCKED').setColor(safe?'#64edb5':'#fd687d');}
+    if(this.doorLabel){this.doorLabel.setText(safe?(this.boardingStage==='closing'?'CLOSING':this.boardingStage==='ascending'?'CLOSED':open>.96?'OPEN':'OPENING'):'LOCKED').setColor(safe?'#64edb5':'#fd687d');}
   }
   openDoor(){
     if(this.floorSolved && this.doorOpen<1){
@@ -125,20 +126,32 @@ export class GameScene extends Phaser.Scene {
       sound.beep('ok');
     }
   }
+  setBoardingStage(stage){
+    this.boardingStage=stage;
+    emit('game:elevator:stage',{stage,floor:this.floor});
+  }
   boardElevator(){
     if(this.transitioning||!this.floorSolved||!this.actor?.active)return;
-    this.transitioning=true;this.isLocked=true;
+    this.transitioning=true;this.isLocked=true;this.setBoardingStage('opening');
     this.actor.setVelocity(0,0);this.actor.body.enable=false;
     const walkTo=()=>{
-      this.state='run';
-      this.tweens.add({targets:this.actor,x:STICK,duration:Math.min(1700,Math.max(350,Math.abs(STICK-this.actor.x)*2)),ease:'Sine.easeInOut',onComplete:()=>{
-        this.state='enter';this.frameNo=0;
-        this.tweens.add({targets:this.avatar,alpha:0,duration:420,ease:'Quad.easeIn'});
-        this.tweens.add({targets:this.actor,scaleX:.35,scaleY:.35,y:this.actor.y-12,duration:420,onComplete:()=>{
-          this.cameras.main.fadeOut(400,2,10,21);
-          let arrived=false;const complete=()=>{if(arrived)return;arrived=true;emit('game:elevator:arrived',{floor:this.floor});};
-          this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,complete);
-          this.time.delayedCall(700,complete);
+      if(!this.actor?.active)return;
+      this.setBoardingStage('approaching');this.facing=1;this.state='run';
+      this.tweens.add({targets:this.actor,x:STICK,duration:Math.min(1700,Math.max(420,Math.abs(STICK-this.actor.x)*2)),ease:'Sine.easeInOut',onComplete:()=>{
+        this.setBoardingStage('entering');this.state='enter';this.frameNo=0;
+        // Stickman is visibly inside the frame, then disappears behind the closing panels.
+        this.avatar.setDepth(4);
+        this.tweens.add({targets:this.actor,scaleX:.52,scaleY:.77,y:this.actor.y-9,duration:430,ease:'Quad.easeIn',onComplete:()=>{
+          this.setBoardingStage('closing');
+          this.tweens.add({targets:this,doorOpen:0,duration:480,ease:'Cubic.easeInOut',onUpdate:()=>this.redrawDoor(),onComplete:()=>{
+            this.avatar.setAlpha(0);
+            this.setBoardingStage('ascending');
+            this.cameras.main.fadeOut(480,2,10,21);
+            let arrived=false;
+            const complete=()=>{if(arrived)return;arrived=true;emit('game:elevator:arrived',{floor:this.floor});};
+            this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,complete);
+            this.time.delayedCall(800,complete);
+          }});
         }});
       }});
     };
@@ -146,10 +159,12 @@ export class GameScene extends Phaser.Scene {
   }
   update(time,delta){
     if(!this.actor?.active)return;
-    this.frameNo+=delta;
+    this.frameNo+=delta;this.landPulse=Math.max(0,this.landPulse-delta/220);
     const left=this.keys && (this.keys.A.isDown||this.keys.LEFT.isDown) || this.virtual.left;
     const right=this.keys && (this.keys.D.isDown||this.keys.RIGHT.isDown) || this.virtual.right;
     const onGround=this.actor.body.blocked.down||this.actor.body.touching.down;
+    if(onGround&&!this.wasGrounded&&this.frameNo>300&&!this.transitioning){this.landPulse=1;sound.beep('land');}
+    this.wasGrounded=onGround;
     if(!this.isLocked){
       const sprint=Boolean(this.keys?.SHIFT?.isDown); const vx=(Number(Boolean(right))-Number(Boolean(left)))*(sprint?SPRINT:SPEED);
       this.actor.setVelocityX(vx);if(vx!==0)this.facing=Math.sign(vx);
@@ -182,22 +197,23 @@ export class GameScene extends Phaser.Scene {
     const facing=this.facing||1;
     const lean=running?facing*3:flight?facing*2:Math.sin(angle)*.7;
     const bob=running?Math.abs(kick)*2:Math.sin(angle)*1.5;
-    const shoulder={x:x+lean*.7,y:y-15-bob};
+    const shoulder={x:x+lean*.7,y:y-15-bob+this.landPulse*3};
     const hip={x:x-lean*.25,y:y+13-bob};
-    const head={x:x+lean,y:y-37-bob};
+    const head={x:x+lean,y:y-37-bob+this.landPulse*4};
     const skin=0xf1faff,accent=0x78ffe2;
     g.lineStyle(3.8,skin,.98);
-    g.strokeCircle(head.x,head.y,11.6);
+    const headRadius=11.6+(this.state==='jump' ? .9 : 0)-this.landPulse*.8;
+    g.strokeCircle(head.x,head.y,headRadius);
     g.lineBetween(shoulder.x,shoulder.y-5,hip.x,hip.y);
     const line=(a,b,c,d,w=3.6)=>{g.lineStyle(w,skin,1).lineBetween(a,b,c,d);};
-    const arm=running?step*11:flight?11:Math.sin(angle)*2;
+    const arm=running?step*11:flight?(this.state==='jump'?-10:12):this.state==='enter'?4:Math.sin(angle)*2;
     const lHand={x:shoulder.x-16-facing*(running?3:0),y:shoulder.y+20+arm};
     const rHand={x:shoulder.x+16+facing*(running?3:0),y:shoulder.y+20-arm};
     line(shoulder.x,shoulder.y,shoulder.x-9,shoulder.y+9+arm*.4);
     line(shoulder.x-9,shoulder.y+9+arm*.4,lHand.x,lHand.y,3.4);
     line(shoulder.x,shoulder.y,shoulder.x+9,shoulder.y+9-arm*.4);
     line(shoulder.x+9,shoulder.y+9-arm*.4,rHand.x,rHand.y,3.4);
-    const swing=flight?0:step*12;
+    const swing=flight?(this.state==='jump'?5:-4):this.state==='enter'?2:step*12;
     const lKnee={x:hip.x-9-swing*.5,y:hip.y+12+(flight?-2:Math.abs(kick)*2)};
     const rKnee={x:hip.x+9+swing*.5,y:hip.y+12+(flight?-2:Math.abs(kick)*2)};
     const lFoot={x:lKnee.x-6-swing,y:hip.y+(flight?23:29)-swing*.3};
@@ -210,6 +226,8 @@ export class GameScene extends Phaser.Scene {
     // Second eye and brows give expression without deviating from minimalist stickman design.
     g.fillCircle(head.x+8*facing,head.y-1,1);
     if(this.state==='fall')g.lineStyle(1.4,accent,.5).lineBetween(x-21,y-30,x-21,y-12);
+    // Contact shadow and small landing pulse make grounded movement readable.
+    g.lineStyle(1,accent,Math.max(.14,.42-this.landPulse*.2)).strokeEllipse(x,y+38,32+this.landPulse*13,4+this.landPulse*2);
   }
   interact(){
     if(this.isLocked||this.transitioning||!this.actor)return;
@@ -227,3 +245,5 @@ export const GAME_CONFIG = {
   physics:{default:'arcade',arcade:{gravity:{y:1030},debug:false}},
   render:{powerPreference:'low-power'}, scene:[GameScene]
 };
+
+export function startGame(){ return new Phaser.Game(GAME_CONFIG); }

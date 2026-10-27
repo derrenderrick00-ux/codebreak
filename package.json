@@ -1,7 +1,7 @@
 {
   "name": "codebreak-tower-of-code",
   "private": true,
-  "version": "1.0.0-rc.1",
+  "version": "1.1.0-rc.1",
   "type": "module",
   "description": "CodeBreak: The Tower of Code — browser-based learning adventure",
   "scripts": {
@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --test tests/*.test.js",
-    "check": "npm run test && npm run build"
+    "check": "npm run test && npm run build",
+    "verify:p0p2": "bash scripts/verify_p0p2.sh"
   },
   "engines": { "node": ">=20.19.0" },
   "dependencies": { "phaser": "^3.90.0" },

@@ -9,18 +9,19 @@
     <title>CodeBreak — The Tower of Code</title>
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to game and learning controls</a>
     <div id="app">
       <header class="site-header">
         <div class="brand"><div class="brand-mark" aria-hidden="true">&lt;/&gt;</div><div><strong>CODEBREAK</strong><span>THE TOWER OF CODE</span></div></div>
-        <div class="top-actions"><span class="version">TEN CHAPTERS · v1.0.0-rc.1</span><button id="new-game-button" class="quiet-btn" type="button" title="Start over from Floor 0 (confirmation required)">↻ New game</button><button id="sound-toggle" class="quiet-btn" type="button" aria-pressed="false">Sound: Off</button><button id="help-button" class="quiet-btn" type="button">Controls</button></div>
+        <div class="top-actions"><span class="version">TEN CHAPTERS · v1.1.0-rc.1</span><button id="new-game-button" class="quiet-btn" type="button" title="Start over from Floor 0 (confirmation required)">↻ New game</button><button id="sound-toggle" class="quiet-btn" type="button" aria-pressed="false">Sound: Off</button><button id="help-button" class="quiet-btn" type="button">Controls</button></div>
       </header>
-      <main class="shell">
+      <main class="shell" id="main-content">
         <div class="dashboard">
           <div class="dashboard-title"><span class="eyebrow"><span id="chapter-tag">CHAPTER 01 · JAVASCRIPT FOUNDATIONS</span> · SUBJECT 404</span><h1><span id="chapter-heading">THE AWAKENING</span> <span class="floor-label" id="floor-label">FLOOR 00 / 100</span></h1><p id="floor-summary" class="subhead">Recover your identity and ascend.</p></div>
           <div class="dashboard-metrics"><div class="metric"><small>RECOVERED CORES</small><b id="cores-count">0 / 10</b></div><div class="metric"><small>FLOORS CLEARED</small><b id="cleared-count">0 / 100</b></div><div class="metric"><small>MODE</small><b id="mode-label">GUIDED</b></div></div>
         </div>
         <div class="game-card">
-          <div class="game-top"><span><span class="status-dot"></span> TOWER FEED <span class="hidden-small">/ SECTOR 01</span></span><span id="game-status">CONNECTING TO SIMULATION...</span></div>
+          <div class="game-top"><span><span class="status-dot"></span> TOWER FEED <span class="hidden-small">/ SECTOR 01</span></span><span id="game-status" role="status" aria-live="polite">CONNECTING TO SIMULATION...</span></div>
           <div class="canvas-wrapper"><div id="game" role="img" aria-label="Side-scrolling game view with an animated stick figure, coding terminal, and opening elevator"></div><div class="in-game-hint" id="in-game-hint" role="status">Move with A/D or ←/→ · Jump with W, ↑ or Space · Press E near the terminal</div></div>
           <div class="game-bottom"><span><kbd>A</kbd> <kbd>D</kbd> MOVE &nbsp; <kbd>W</kbd> JUMP &nbsp; <kbd>E</kbd> INTERACT</span><div class="mobile-controls" aria-label="Touch controls"><button type="button" data-control="left" aria-label="Move left">◀</button><button type="button" data-control="right" aria-label="Move right">▶</button><button type="button" data-control="jump">JUMP</button><button type="button" data-control="interact">USE</button></div><span id="chapter-progress" class="progress-label">0% TOWER REPAIRED</span></div>
         </div>

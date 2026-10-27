@@ -1,0 +1,6 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>CodeBreak editor acceptance harness</title>
+<link rel="stylesheet" href="../../src/style.css"><body style="padding:40px">
+<div class="editor-panel" style="max-width:700px"><div id="editor-surface" class="editor-surface"><div id="editor-gutter" class="editor-gutter"></div><div class="editor-stack"><pre id="syntax-layer" class="syntax-layer" aria-hidden="true"></pre><textarea id="code-input" class="code-input" aria-label="Code solution editor"></textarea></div></div><div class="editor-toolbar"><span id="editor-metrics"></span><button id="syntax-toggle" class="quiet-btn">Highlight: On</button></div></div>
+<div id="lesson-visualizer" class="lesson-visualizer" style="max-width:700px"></div>
+<script type="module">import {setupEditor} from '../../src/ui/editor.js';import {mountVisualizer} from '../../src/learning/visualizer.js';const input=document.querySelector('#code-input');input.value='const message = "<img src=x onerror=alert(1)>";\nreturn message;';setupEditor(input,{language:'js'});mountVisualizer(document.querySelector('#lesson-visualizer'),'INPUT → TRANSFORM → OUTPUT');</script>
+</body></html>

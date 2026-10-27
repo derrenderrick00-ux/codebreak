@@ -8,6 +8,8 @@ import { loadProgress, saveProgress, completeFloor, applyPlacement, registerAtte
 import { runChallenge } from '../runtime/sandbox.js';
 import { sound } from '../core/sound.js';
 import { resetLocalGame } from '../state/reset.js';
+import { setupEditor } from './editor.js';
+import { mountVisualizer } from '../learning/visualizer.js';
 
 const $ = (id) => document.getElementById(id);
 const escapeHTML = (text) => String(text).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -52,6 +54,10 @@ export class AppUI {
     bus.addEventListener('ui:locked',()=>{this.say('PATCH: The elevator requires a successful terminal challenge.');sound.beep('error');});
     bus.addEventListener('ui:elevator',({detail})=>this.takeElevator(detail.floor));
     bus.addEventListener('game:elevator:arrived',({detail})=>this.finishElevator(detail.floor));
+    bus.addEventListener('game:elevator:stage',({detail})=>{
+      const labels={opening:'LIFT OPENING',approaching:'SUBJECT 404 APPROACHING LIFT',entering:'SUBJECT 404 BOARDING',closing:'ELEVATOR DOORS CLOSING',ascending:'ASCENDING TO NEXT FLOOR'};
+      const status=document.getElementById('game-status');if(status&&labels[detail.stage])status.textContent=labels[detail.stage];
+    });
     bus.addEventListener('game:near',({detail})=>{
       $('in-game-hint').textContent = detail.terminal ? 'TERMINAL IN RANGE · Press E or choose Open challenge' : detail.door ? 'ELEVATOR IN RANGE · Press E to enter when unlocked' : 'A/D or ←/→ to move · W/↑/Space to jump · E to interact';
     });
@@ -105,6 +111,7 @@ export class AppUI {
       else if(action==='run')this.gradeChallenge();
       else if(action==='hint')this.showHint();
       else if(action==='reset-code')this.resetCode();
+      else if(action==='toggle-syntax')this.toggleSyntax();
       else if(action==='elevator')this.takeElevator(this.progress.currentFloor);
       else if(action==='mode')this.changeMode(target.dataset.mode);
       else if(action==='export')this.downloadProgress();
@@ -217,16 +224,18 @@ export class AppUI {
     let draft=floor.setup;
     try{draft=localStorage.getItem(DRAFT_KEY+floorNumber)??floor.setup;}catch{}
     this.showModal(`FLOOR ${String(floorNumber).padStart(2,'0')} / ${floor.topic.toUpperCase()}`,floor.title,`
-      <p class="mission-brief">${escapeHTML(LORE[floorNumber] ?? `${CHAPTERS[floor.chapter-1].title}: ${floor.dialogue}`)}</p><div class="challenge-layout"><div class="lesson-panel"><div class="section-label">PATCH ACADEMY · NINE-STEP METHOD</div>${lesson}</div>
+      <p class="mission-brief">${escapeHTML(LORE[floorNumber] ?? `${CHAPTERS[floor.chapter-1].title}: ${floor.dialogue}`)}</p><div class="challenge-layout"><div class="lesson-panel"><div class="section-label">PATCH ACADEMY · NINE-STEP METHOD</div>${lesson}<div id="lesson-visualizer" class="lesson-visualizer" aria-label="Interactive concept visualization"></div></div>
       <div class="editor-panel"><div class="editor-header"><span>⌨ ${escapeHTML((floor.kind??'js').toUpperCase())} TERMINAL</span><span class="editor-language">${floor.kind==='html'?'index.html':floor.kind==='css'?'style.css':floor.kind==='sql'?'query.sql':'main.js'}</span></div>
         <p class="editor-help">${floor.kind==='html'?'Write HTML and pass the structural checks.':floor.kind==='css'?'Write CSS and pass the selector/declaration checks.':floor.kind==='sql'?'Write PostgreSQL SQL and pass the structural checks (not a live database).':`Complete <code>${escapeHTML(floor.fn)}()</code> and pass multiple tests.`} <strong>All checks must pass</strong> to unlock the elevator.${floor.chapter>=6&&floor.kind==='js'?' This lab models a backend concept in browser JavaScript; see capstone/ for live server exercises.':''}</p>
-        <label for="code-input" class="sr-only">Editable JavaScript solution</label><textarea id="code-input" class="code-input" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Code solution editor"></textarea>
+        <label for="code-input" class="sr-only">Editable programming solution</label><div class="editor-surface" id="editor-surface"><div class="editor-gutter" id="editor-gutter" aria-hidden="true"></div><div class="editor-stack"><pre class="syntax-layer" id="syntax-layer" aria-hidden="true"></pre><textarea id="code-input" class="code-input" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Code solution editor"></textarea></div></div><div class="editor-toolbar"><span id="editor-metrics" aria-live="off">Editor ready</span><button type="button" class="quiet-btn" data-action="toggle-syntax" id="syntax-toggle" aria-pressed="true">Highlight: On</button></div>
         ${floor.kind==='html'||floor.kind==='css'?'<div class="preview-row"><span>LIVE PREVIEW · isolated frame</span><iframe title="Sandboxed code preview" id="code-preview" sandbox="" referrerpolicy="no-referrer"></iframe></div>':''}<div class="editor-footer"><span id="test-count">${floor.tests.length} TESTS · ${solved?'✓ PREVIOUSLY CLEARED':'AWAITING EXECUTION'}</span><span>Ctrl+Enter to run</span></div>
         <div class="action-row editor-actions">${button('▶ Run tests','run','primary-btn')}${button('Hint','hint')}${button('Reset editor','reset-code')}</div><p id="hint-area" class="hint-area hidden" aria-live="polite"></p><div id="test-feedback" role="status" aria-live="polite">${solved?'<div class="pass-banner">✓ Elevator already unlocked. You can still practice this floor.</div>':''}</div>
         ${solved?`<div class="action-row">${button(floorNumber===100?'Reach the surface':floorNumber%10===0?'Claim chapter core':'Board elevator','elevator','primary-btn')}</div>`:''}
       </div></div>
     `,'challenge');
     const input=$('code-input');input.value=draft;
+    setupEditor(input,{language:floor.kind??'js'});
+    mountVisualizer($('lesson-visualizer'),floor.lesson.visualization);
     const updatePreview=()=>{const preview=$('code-preview');if(!preview)return;if(floor.kind==='html')preview.srcdoc=inertHTMLPreview(input.value);else if(floor.kind==='css')preview.srcdoc=inertHTMLPreview(`<style>${input.value.replace(/<\/style/gi,'')}</style><div class=\"dashboard\"><div class=\"card\">Tower Control</div><div class=\"card\">Logic Core</div></div><div class=\"panel cores layout\"><button class=\"btn control door\">Signal</button></div>`);};
     updatePreview();
     input.addEventListener('input',()=>{try{localStorage.setItem(DRAFT_KEY+floorNumber,input.value.slice(0,12000));}catch{}updatePreview();});
@@ -235,8 +244,14 @@ export class AppUI {
       if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();this.gradeChallenge();}
     });
   }
+  toggleSyntax(){
+    const holder=$('editor-surface');if(!holder)return;
+    const off=holder.classList.toggle('syntax-off');const btn=$('syntax-toggle');
+    btn.textContent=`Highlight: ${off?'Off':'On'}`;btn.setAttribute('aria-pressed',String(!off));
+    $('code-input').focus();
+  }
   showHint(){if(this.activeModal!=='challenge')return;const area=$('hint-area');area.textContent='PATCH: '+getFloor(this.progress.currentFloor).lesson.hint;area.classList.remove('hidden');}
-  resetCode(){if(this.activeModal!=='challenge')return;const floor=this.progress.currentFloor;$('code-input').value=getFloor(floor).setup;try{localStorage.removeItem(DRAFT_KEY+floor);}catch{}$('test-feedback').textContent='Editor restored to the starter solution.';}
+  resetCode(){if(this.activeModal!=='challenge')return;const floor=this.progress.currentFloor;$('code-input').value=getFloor(floor).setup;$('code-input').dispatchEvent(new Event('input'));try{localStorage.removeItem(DRAFT_KEY+floor);}catch{}$('test-feedback').textContent='Editor restored to the starter solution.';}
   async gradeChallenge(){
     if(this.activeModal!=='challenge'||this.running)return;
     const floorNumber=this.progress.currentFloor;
@@ -287,7 +302,7 @@ export class AppUI {
     this.showModal('TOWER OF CODE / THE END','SYSTEM RESTORED · FREEDOM GRANTED',`<div class="finale"><div class="core-orb" aria-hidden="true">◇</div><p class="terminal-green">&gt; ALL TEN CHAPTERS CLEARED<br>&gt; ROOT: CONTAINMENT RELEASED<br>&gt; IDENTITY: DEVELOPER<br>&gt; TOWER STATUS: 100 / 100</p><blockquote>ROOT: "Containment was never meant to imprison you. It protected the world from an incomplete system."<br><br>PATCH: "You escaped a hundred floors of bugs. Now you’re qualified to create your own."<br><br>NULL: "See you outside, Subject 404."</blockquote><p>The city lights turn on. Subject 404 steps into the outside world. Your next mission is independent full-stack engineering.</p><p class="muted">Game completion documents in-game assessment only. Build, test and deploy the included real Tower Control System capstone separately for hands-on Node, Express, PostgreSQL, JWT and production practice.</p></div><div class="action-row">${button('Review progress','progress','primary-btn')}${button('Replay floors','floor-map')}${button('Story archive','review-story')}</div>`,'finale');
   }
   openHelp(){this.showModal('SYSTEM HELP','HOW TO PLAY',`
-    <div class="help-grid"><div><kbd>A</kbd> / <kbd>←</kbd><p>Move left</p></div><div><kbd>D</kbd> / <kbd>→</kbd><p>Move right</p></div><div><kbd>W</kbd> / <kbd>↑</kbd> / <kbd>SPACE</kbd><p>Jump</p></div><div><kbd>SHIFT</kbd><p>Run</p></div><div><kbd>E</kbd><p>Interact with a terminal or elevator when nearby</p></div><div><kbd>Ctrl</kbd> + <kbd>Enter</kbd><p>Run code tests while editing</p></div></div><p>Touch controls appear below the game on small screens. You can also open the coding challenge using the button below the game from anywhere on the floor.</p><p>Learn the concepts using PATCH's nine-step lesson panels; then edit JavaScript and pass all automated tests. Errors don't cost lives.</p><div class="action-row">${button('Back to game','floor-map')}${button('Open coding terminal','challenge','primary-btn')}</div>`,'help');}
+    <div class="help-grid"><div><kbd>A</kbd> / <kbd>←</kbd><p>Move left</p></div><div><kbd>D</kbd> / <kbd>→</kbd><p>Move right</p></div><div><kbd>W</kbd> / <kbd>↑</kbd> / <kbd>SPACE</kbd><p>Jump</p></div><div><kbd>SHIFT</kbd><p>Run</p></div><div><kbd>E</kbd><p>Interact with a terminal or elevator when nearby</p></div><div><kbd>Ctrl</kbd> + <kbd>Enter</kbd><p>Run code tests while editing</p></div></div><p>Touch controls appear below the game on small screens. You can also open the coding challenge using the button below the game from anywhere on the floor.</p><p>Learn using PATCH's nine-step panels and the interactive concept stepper. The editor offers line numbers and optional syntax highlighting; press Ctrl+Enter to run tests. Errors don't cost lives.</p><div class="action-row">${button('Back to game','floor-map')}${button('Open coding terminal','challenge','primary-btn')}</div>`,'help');}
   downloadProgress(){const data=exportProgress(this.progress);const blob=new Blob([data],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='codebreak-save-v2-compatible.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   async handleImport(file){
     if(!file)return;

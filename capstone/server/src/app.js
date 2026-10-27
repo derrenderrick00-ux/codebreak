@@ -1,5 +1,6 @@
 import express from 'express';
 import {issueToken,validateToken,hashPassword,verifyPassword,strongPassword,validEmail,cleanCore} from './security.js';
+import {createWindowLimiter} from './limits.js';
 const jsonBodyLimit='16kb';
 const invalid=(res,message)=>res.status(400).json({error:message});
 export function makeApp({db,secret,issuer='codebreak-capstone',audience='codebreak-dashboard',allowedOrigin='http://127.0.0.1:4500'}){
@@ -9,6 +10,8 @@ export function makeApp({db,secret,issuer='codebreak-capstone',audience='codebre
   app.disable('x-powered-by');
   app.use((req,res,next)=>{
     res.setHeader('X-Content-Type-Options','nosniff');
+    res.setHeader('Cache-Control','no-store');
+    res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=()');
     res.setHeader('Referrer-Policy','no-referrer');
     res.setHeader('X-Frame-Options','DENY');
     res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
@@ -21,9 +24,12 @@ export function makeApp({db,secret,issuer='codebreak-capstone',audience='codebre
     next();
   });
   app.use(express.json({limit:jsonBodyLimit}));
-  // Best-effort in-process limiter is development-only; use distributed limits in production.
-  const loginAttempts=new Map();
+  // In-process bounded limiters are for local practice ONLY, not Internet exposure.
+  const loginLimiter=createWindowLimiter({limit:10,windowMs:60_000});
+  const registrationLimiter=createWindowLimiter({limit:5,windowMs:60_000});
   app.post('/api/register',async(req,res,next)=>{
+    const quota=registrationLimiter.check(req.ip);
+    if(!quota.allowed){res.setHeader('Retry-After',String(quota.retryAfter));return res.status(429).json({error:'Try again later'});}
     try{
       const {email,password,displayName}=req.body??{};
       if(!validEmail(email)||!strongPassword(password)||typeof displayName!=='string'||!displayName.trim()||displayName.length>80)return invalid(res,'Valid email, 12+ character password, and display name required');
@@ -34,17 +40,15 @@ export function makeApp({db,secret,issuer='codebreak-capstone',audience='codebre
     }catch(error){next(error);}
   });
   app.post('/api/login',async(req,res,next)=>{
-    const ip=req.ip;const now=Date.now();const entry=loginAttempts.get(ip)??{n:0,reset:now+60000};
-    if(now>entry.reset){entry.n=0;entry.reset=now+60000;}
-    if(entry.n>=10)return res.status(429).json({error:'Try again later'});
-    entry.n++;loginAttempts.set(ip,entry);
+    const quota=loginLimiter.check(req.ip);
+    if(!quota.allowed){res.setHeader('Retry-After',String(quota.retryAfter));return res.status(429).json({error:'Try again later'});}
     try{
       const {email,password}=req.body??{};
       if(!validEmail(email)||typeof password!=='string')return res.status(401).json({error:'Invalid credentials'});
       const result=await db.query('SELECT id,email,display_name,password_salt,password_hash FROM accounts WHERE email=$1',[email.trim().toLowerCase()]);
       const user=result.rows[0];
       if(!user||!(await verifyPassword(password,user.password_salt,user.password_hash)))return res.status(401).json({error:'Invalid credentials'});
-      entry.n=0;
+      loginLimiter.reset(req.ip);
       const token=await issueToken(user,secret,issuer,audience);
       return res.json({accessToken:token,user:{id:String(user.id),email:user.email,displayName:user.display_name}});
     }catch(error){next(error);}
@@ -56,6 +60,7 @@ export function makeApp({db,secret,issuer='codebreak-capstone',audience='codebre
     catch{return res.status(401).json({error:'Invalid or expired token'});}
   };
   app.get('/api/health',(_req,res)=>res.json({status:'ok'}));
+  app.get('/api/ready',async(_req,res)=>{try{await db.query('SELECT 1');res.json({status:'ready'});}catch{res.status(503).json({error:'Database unavailable'});}});
   app.get('/api/me',authenticate,async(req,res,next)=>{
     try{
       const found=await db.query('SELECT id,email,display_name FROM accounts WHERE id=$1',[req.user.id]);

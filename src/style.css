@@ -25,3 +25,31 @@ button,textarea,input{font:inherit}button{cursor:pointer}button:disabled{opacity
 
 /* New-game action stays available when the header wraps on narrow screens. */
 @media (max-width:670px) { .site-header {flex-wrap:wrap;padding:10px 0;} .top-actions {flex-wrap:wrap;justify-content:flex-end;margin-left:auto;gap:6px;} }
+
+/* v1.1 P1: accessible editor with inert syntax overlay and line gutter */
+.editor-surface{display:grid;grid-template-columns:42px minmax(0,1fr);border-block:1px solid #293d50;background:#060d17;min-width:0}
+.editor-gutter{padding:18px 8px 18px 5px;text-align:right;white-space:pre;overflow:hidden;color:#71869e;border-right:1px solid #294052;font:13px/1.8 'Space Mono',ui-monospace,monospace;user-select:none}
+.editor-stack{position:relative;overflow:hidden;min-width:0;min-height:255px}
+.editor-stack>.code-input,.editor-stack>.syntax-layer{margin:0;border:0;box-sizing:border-box;padding:18px;font:13px/1.8 'Space Mono',ui-monospace,monospace;letter-spacing:normal;tab-size:2;white-space:pre;overflow:auto;word-break:normal;overflow-wrap:normal}
+.editor-stack>.code-input{position:relative;z-index:2;min-height:255px;height:255px;resize:vertical;color:transparent!important;background:transparent;caret-color:#9cffe1;-webkit-text-fill-color:transparent}
+.editor-stack>.code-input::selection{background:#4379bca0;-webkit-text-fill-color:transparent}
+.editor-stack>.syntax-layer{position:absolute;z-index:1;inset:0;pointer-events:none;min-height:255px;color:#c9e3ea;scrollbar-width:none}
+.syntax-layer::-webkit-scrollbar{display:none}
+.editor-surface.syntax-off .syntax-layer{display:none}
+.editor-surface.syntax-off .code-input{color:#c1f8e5!important;-webkit-text-fill-color:#c1f8e5}
+.tok-keyword{color:#89baff}.tok-string{color:#b7f38d}.tok-number{color:#e8b86f}.tok-tag{color:#ffadb7}.tok-comment{color:#6c93a4;font-style:italic}
+.editor-toolbar{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 13px;color:#a4b7ca;font-size:11px;background:#111e2e}
+.editor-toolbar .quiet-btn{padding:5px 9px;font-size:11px}
+/* v1.1 P1: interactive nine-step concept flow */
+.lesson-visualizer{margin:12px 0 2px;border:1px solid #326258;background:#0b2327;border-radius:9px;padding:14px}
+.visualizer-heading{display:flex;justify-content:space-between;gap:12px;color:#83e6d3;font:11px 'Space Mono',monospace;letter-spacing:.6px}
+.trace-flow{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0;max-height:180px;overflow:auto}
+.trace-node{display:flex;align-items:start;gap:7px;padding:9px;border:1px solid #2b5265;background:#122433;border-radius:6px;color:#a7bdce;font-size:11px;flex:1 1 92px;max-width:210px}
+.trace-node b{color:#83e6d3}.trace-active{background:#184b48;color:#ecfff9;border-color:#74ebcb;box-shadow:inset 0 0 0 1px #54c4a9}
+.trace-focus{color:#d6f4eb;font-size:12px;line-height:1.6;overflow-wrap:anywhere}.trace-controls{margin:9px 0 0}.trace-controls button{padding:7px 10px;font-size:11px}
+@media(prefers-reduced-motion:reduce){.game-card canvas{scroll-behavior:auto}}
+
+/* v1.1 P2: keyboard skip link and clearer touch targets */
+.skip-link{position:absolute;z-index:110;top:-70px;left:12px;background:#193b3c;color:#e5fff3;padding:12px;border:2px solid #83f3d4;border-radius:7px}
+.skip-link:focus{top:8px}
+@media(pointer:coarse){.mobile-controls button{min-width:44px;min-height:44px}}
