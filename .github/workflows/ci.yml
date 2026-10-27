@@ -1,4 +1,4 @@
-name: CodeBreak CI
+name: CodeBreak Release Checks
 on:
   push:
     branches: [main, 'feature/**']
@@ -7,16 +7,47 @@ on:
 permissions:
   contents: read
 jobs:
-  test-and-build:
+  game:
+    name: Game checks and Vite build
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
-      - name: Install root dependencies
-        run: npm ci
-      - name: Validate source and build
-        run: npm run verify:p0p2
+      - run: npm ci
+      - run: npm run verify:release
+
+  capstone:
+    name: Real PostgreSQL authentication and CRUD
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: codebreak_test
+          POSTGRES_USER: codebreak_test
+          POSTGRES_PASSWORD: local_test_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U codebreak_test -d codebreak_test"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      CODEBREAK_TEST_DATABASE_URL: postgresql://codebreak_test:local_test_only@127.0.0.1:5432/codebreak_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install capstone dependencies
+        run: npm install --prefix capstone/server --no-audit --no-fund
+      - name: Run capstone unit tests
+        run: npm test --prefix capstone/server
+      - name: Real Express and PostgreSQL API checks
+        run: npm run test:integration --prefix capstone/server

@@ -35,3 +35,17 @@ With Docker installed, run `docker compose -f capstone/compose.dev.yml up -d` fr
 Demo code. **Do not expose directly on the Internet**. Required first: TLS with a hardened reverse proxy; durable distributed rate limiting; robust input validation, monitoring, audit logs and backup/recovery; token revocation/refresh design; database least-privilege account; CSRF analysis if switching to cookies; environment secret management, dependency audits, integration tests with a disposable real PostgreSQL database. `server.js` binds to `127.0.0.1` intentionally.
 
 Use the included `docs/PHASE_15_DEPLOYMENT.md` for the production checklist and the QA report for known limitations.
+
+## Release acceptance: isolated database integration (v1.2.0-rc.1)
+
+From the project root:
+
+```bash
+bash scripts/verify_capstone_integration.sh
+```
+
+The script starts an **ephemeral** PostgreSQL instance on `127.0.0.1:55432` (overridable with `CODEBREAK_PG_TEST_PORT`), runs the capstone's own unit tests, creates a temporary random SQL schema, exercises the real API with two users, and removes both the schema and container when finished. It does not use or modify your main development database/volume.
+
+Alternatively, after installing capstone dependencies, supply `CODEBREAK_TEST_DATABASE_URL` pointing to a dedicated localhost PostgreSQL database with `test` in its name, then run `npm run test:integration` in `capstone/server`.
+
+A green local integration run does **not** constitute public-deployment approval. See `docs/STAGE_III_RELEASE_ACCEPTANCE.md` for the remaining security gates.

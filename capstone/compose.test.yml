@@ -1,0 +1,18 @@
+# EPHEMERAL PostgreSQL database exclusively for local CodeBreak integration tests.
+# Does not share volumes with the main capstone development PostgreSQL service.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: codebreak_test
+      POSTGRES_PASSWORD: local_test_only
+      POSTGRES_DB: codebreak_test
+    ports:
+      - "127.0.0.1:${CODEBREAK_PG_TEST_PORT:-55432}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U codebreak_test -d codebreak_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 15

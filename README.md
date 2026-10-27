@@ -113,3 +113,16 @@ Project intended as the author's original educational game. No third-party copie
 
 ## v1.1.0-rc.1 P0–P2 refinement update
 See `docs/P0_P2_REFINEMENT_RELEASE.md` for the priority matrix, diagrams and limitations; `docs/P0_P2_ACCEPTANCE_CHECKLIST.md` for manual checks; and `docs/BACKUP_UPGRADE_ROLLBACK.md` for safe Ubuntu installation and rollback. The original browser progress schema remains compatible.
+
+## v1.2.0-rc.1 — Release acceptance stage (after P0–P2)
+
+This stage adds **automated release gates and real PostgreSQL integration tests**, without changing saved progress, curriculum, or stickman gameplay. See `docs/STAGE_III_RELEASE_ACCEPTANCE.md` and `docs/STAGE_III_UBUNTU_INSTALL.md`.
+
+```bash
+npm install
+npm run verify:release
+# Optional isolated database integration — needs Docker Compose v2:
+bash scripts/verify_capstone_integration.sh
+```
+
+CI now runs both the main game build/test job and a separate real PostgreSQL capstone verification job. Public deployment remains blocked until live database tests, full browser/accessibility checks and security/operations review pass.
